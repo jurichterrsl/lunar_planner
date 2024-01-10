@@ -1,1 +1,3 @@
 # lunar_path_planner
+
+This planner is currently in development. Nothing more to add...
