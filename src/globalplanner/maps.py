@@ -45,7 +45,7 @@ class Maps:
         # define extent of maps from one tif example
         self.xmin, self.ymin, self.xmax, self.ymax, self.width, self.height = \
             self.define_corners(init_filename)
-        print(self.xmin, self.ymin, self.xmax, self.ymax)
+        #print(self.xmin, self.ymin, self.xmax, self.ymax)
         self.pixel_size = self.width / self.n_px_width
         if plot_global:
             self.extent = (self.xmin, self.xmax, self.ymin, self.ymax)

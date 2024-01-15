@@ -203,34 +203,39 @@ class PathPlanningWidget(QtWidgets.QWidget):
     def calc_path(self, start, goal):
         '''Runs the A* algorithm'''
         # Run A* algorithm
-        [start_pixel, goal_pixel] = transform.from_sim_to_pixel([start, goal], self.setup)
-        self.path_pixel, self.stats = astar.astar(self.setup.map_size_in_pixel, start_pixel, goal_pixel, \
-                                           self.setup.h_func, self.setup.g_func, allow_diagonal=True)
-        if self.path_pixel.any() == -1:
-            print("No valid path found! Please check input parameters.")
-        # Sampling of waypoints
-        n = 1
-        last_wp = self.path_pixel[self.path_pixel.shape[0]-1,:]
-        self.wp_pixel = np.vstack([self.path_pixel[::n,:], last_wp])
+        if self.start and self.goal:
+            [start_pixel, goal_pixel] = transform.from_sim_to_pixel([start, goal], self.setup)
+            self.path_pixel, self.stats = astar.astar(self.setup.map_size_in_pixel, start_pixel, goal_pixel, \
+                                            self.setup.h_func, self.setup.g_func, allow_diagonal=True)
+            if self.path_pixel.any() == -1:
+                print("No valid path found! Please check input parameters.")
+            # Sampling of waypoints
+            n = 1
+            last_wp = self.path_pixel[self.path_pixel.shape[0]-1,:]
+            self.wp_pixel = np.vstack([self.path_pixel[::n,:], last_wp])
 
-        # Transform in different coordinate systems in save in one .dat file
-        self.wp_global = transform.from_pixel_to_globe(self.wp_pixel, self.setup)
-        self.wp_sim = transform.from_pixel_to_sim(self.wp_pixel, self.setup)
+            # Transform in different coordinate systems in save in one .dat file
+            self.wp_global = transform.from_pixel_to_globe(self.wp_pixel, self.setup)
+            self.wp_sim = transform.from_pixel_to_sim(self.wp_pixel, self.setup)
 
-        wp_all = np.concatenate((self.wp_global, self.wp_sim, self.wp_pixel), axis=1)
-        column_names = np.array(['# Longitute', 'Latitude', 'x in sim', 'y in sim', \
-                                 'Row in arr', 'Col in arr'])
-        wp_header = '\t'.join(['{:<10}'.format(name) for name in column_names])
-        np.savetxt('src/globalplanner/data/waypoints.dat', wp_all, \
-                   header=wp_header, comments='', delimiter='\t', fmt='%-3f')
-        
-        # Save the statistics into one .dat file
-        path_coordinates = transform.from_pixel_to_globe(self.path_pixel, self.setup)
-        stats_header = '\t\t'.join(('LON', 'LAT', 'E_P', 'R_P', 'I_P', 'B_P', 'g_func', 'h_func'))
-        stats_with_wp = np.hstack((path_coordinates[1:], np.array(self.stats)))
-        stats_with_wp = np.vstack((stats_with_wp, np.sum(stats_with_wp, axis=0, where=[0,0,1,1,1,1,1,1])))
-        np.savetxt('src/globalplanner/data/stats.dat', stats_with_wp, \
-                   header=stats_header, comments='', delimiter='\t', fmt='%-3f')
+            wp_all = np.concatenate((self.wp_global, self.wp_sim, self.wp_pixel), axis=1)
+            column_names = np.array(['# Longitute', 'Latitude', 'x in sim', 'y in sim', \
+                                    'Row in arr', 'Col in arr'])
+            wp_header = '\t'.join(['{:<10}'.format(name) for name in column_names])
+            np.savetxt('src/globalplanner/data/waypoints.dat', wp_all, \
+                    header=wp_header, comments='', delimiter='\t', fmt='%-3f')
+            
+            # Save the statistics into one .dat file
+            path_coordinates = transform.from_pixel_to_globe(self.path_pixel, self.setup)
+            stats_header = '\t\t'.join(('LON', 'LAT', 'E_P', 'R_P', 'I_P', 'B_P', 'g_func', 'h_func'))
+            stats_with_wp = np.hstack((path_coordinates[1:], np.array(self.stats)))
+            stats_with_wp = np.vstack((stats_with_wp, np.sum(stats_with_wp, axis=0, where=[0,0,1,1,1,1,1,1])))
+            np.savetxt('src/globalplanner/data/stats.dat', stats_with_wp, \
+                    header=stats_header, comments='', delimiter='\t', fmt='%-3f')
+        elif self.start:
+            print("Please choose a goal by clicking on the map (right mouse button).")
+        elif self.goal:
+            print("Please choose a start by clicking on the map (left mouse button).")
 
 
     def slider_value_change(self):

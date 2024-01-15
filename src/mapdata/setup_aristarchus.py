@@ -20,6 +20,7 @@ class Setup:
     s_max = 30
     r_max = 0.3
     PLOT_GLOBAL = True
+    R_max = None
 
 
     def __init__(self, path_to_root, a, b, c, plot_global):
@@ -40,7 +41,7 @@ class Setup:
 
         distance_max = math.sqrt(2) * abs(self.maps.pixel_size)
         self.E_max = self.E(30,0.3,distance_max)
-        self.R_max = self.R(-30,0.3,distance_max)
+        self.R_max = 1#self.R(-30,0.3,distance_max)
         self.E_min = 0.3922
         
 
@@ -66,12 +67,13 @@ class Setup:
         # Add steep and rocky areas to banned areas
         slope = self.maps.maps_array[:,:,1]
         rockabundance = self.maps.maps_array[:,:,2]
-        banned = self.maps.maps_array[:,:,4]
+        # Load banned areas or set to zero
+        # banned = self.maps.maps_array[:,:,4]\
+        banned = np.zeros(self.map_size_in_pixel)
         banned[slope>30] = 1
         banned[slope<-30] = 1
         banned[rockabundance>0.3] = 1
         self.maps.maps_array[:,:,4] = banned
-        self.maps.maps_array[:,:,4] = np.zeros(self.map_size_in_pixel)
 
     
     def h_func(self, node, goal):
@@ -145,10 +147,13 @@ class Setup:
     def R(self, s, r, distance):
         '''single risk value'''
         # run script 'plot_3D.py' to get coefficients
-        crash = (0.0005310*s + 0.3194*r + 0.0003137*s**2 + -0.02298*s*r + 10.8*r**2)/100
-        if crash<0:
-            crash=0
-        return 1-(1-crash)**(distance/8)
+        # crash = (0.0005310*s + 0.3194*r + 0.0003137*s**2 + -0.02298*s*r + 10.8*r**2)/100
+        # print(crash)
+        # if crash<0:
+        #     crash=0
+        # return 1-(1-crash)**(distance/8)
+        # Use linear dependence instead with maximum (1) at 30 deg
+        return abs(s)/30
 
 
     def getdistance(self, node1, node2):

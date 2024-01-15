@@ -17,6 +17,12 @@ def from_pixel_to_globe(coordinates, setup):
     # Extract x and y coordinates from the input array or the tupel ist
     coordinates_sim = from_pixel_to_sim(coordinates, setup)
     return from_sim_to_globe(coordinates_sim, setup)
+
+
+def from_globe_to_pixel(coordinates, setup):
+    # Extract x and y coordinates from the input array or the tupel ist
+    coordinates_sim = from_globe_to_sim(coordinates, setup)
+    return from_sim_to_pixel(coordinates_sim, setup)
         
 
 def from_pixel_to_sim(coordinates, setup):
