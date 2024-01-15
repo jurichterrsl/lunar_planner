@@ -1,6 +1,0 @@
-WKT,label,stroke,marker-color,marker-size,fill
-"LINESTRING Z (-20.04229 11.60916 500,-20.31112 7.44508 300)",Crater Traverse,#55efc4,,,
-"LINESTRING (-20.59197 11.16343,-21.48569 10.47514,-21.56215 9.08634,-20.6129 8.13575)",Crater Rim Traverse,#a29bfe,,,
-"POINT (-20.49535 9.90553)",Point of Interest #1,,#fdcb6e,14,
-"POINT Z (-19.74757 9.33691 80)",Another Point (w/ height),,#fd79a8,,
-"POLYGON ((-18.88875 10.79391,-18.45751 10.1232,-19.35789 9.64619,-19.72895 10.32426,-18.88875 10.793913))",Area to investigate,"rgba(108, 92, 231,1.0)",,,"rgba(108, 92, 231,0.3)"
