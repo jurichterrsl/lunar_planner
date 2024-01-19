@@ -1,9 +1,9 @@
 build
-cv-bridge
 matplotlib==3.1.2
 numpy
 opencv-python
 osrf-pycommon
+pandas
 Pillow
 pyproj
 pymap3d
@@ -11,8 +11,6 @@ python-qt-binding
 PyQt5
 PyYAML
 rasterio
-rospkg
-rospy
 scikit-learn
 scipy
 setuptools

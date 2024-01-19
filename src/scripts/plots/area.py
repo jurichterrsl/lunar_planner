@@ -13,6 +13,8 @@ from collections import defaultdict
 from itertools import combinations
 from sklearn.cluster import KMeans
 from scipy.spatial.distance import cdist
+import csv
+import pandas as pd
 
 
 def create_paths(scale, save_data=False):
@@ -22,15 +24,15 @@ def create_paths(scale, save_data=False):
     a_values = np.logspace(0, 1, scale)
     b_values = np.logspace(0, 1, scale)
     c_values = np.logspace(0, 1, scale)
-    n = len(list(product(a_values, b_values, c_values)))-1
+    n = len(list(product(a_values, b_values, c_values)))
     
     # Define start and goal
     setup = Setup('src/mapdata/', 1.0, 0, 0, plot_global=True)
-    setup.maps.choose_start_and_goal_on_image()
-    start = setup.maps.start
-    goal = setup.maps.goal
-    # start = (-46.755803, 25.059801)
-    # goal = (-46.771790, 25.041539)
+    #setup.maps.choose_start_and_goal_on_image()
+    #start = setup.maps.start
+    #goal = setup.maps.goal
+    start = (-46.755803, 25.059801)
+    goal = (-46.771790, 25.041539)
     [start_sim, goal_sim] = transform.from_globe_to_sim([start, goal], setup)
     [start_pixel, goal_pixel] = transform.from_sim_to_pixel([start_sim, goal_sim], setup)
     
@@ -44,7 +46,7 @@ def create_paths(scale, save_data=False):
     if save_data:
         folder_name = 'src/globalplanner/data/'+datetime.now().strftime('%d%m%Y_%H%M')
         os.makedirs(folder_name)
-        os.makedirs(folder_name+'/raw/')
+        #os.makedirs(folder_name+'/raw/')
     
     i=0
     for a, b, c in product(a_values, b_values, c_values):
@@ -63,23 +65,35 @@ def create_paths(scale, save_data=False):
                 # Run A* algorithm
                 path, stats = astar.astar(setup.map_size_in_pixel, start_pixel, goal_pixel, setup.h_func, setup.g_func, allow_diagonal=True)
                 path_globe = transform.from_pixel_to_globe(path, setup)
+                path_sim = transform.from_pixel_to_sim(path, setup)
                 ax.plot(path_globe[:,0], path_globe[:,1], 'red', linewidth=2)
 
+                # Get total length
+                path = np.array(path_sim)
+                pairwise_distances = np.linalg.norm(path[1:] - path[:-1], axis=1)
+                total_length = np.sum(pairwise_distances)
+                total_pixel = len(path)
                 # Save sum of stats to file
                 if save_data:
                     stats_sum = np.sum(stats, axis=0, where=[1, 1, 1, 1, 1, 1])
-                    if i==1:
-                        with open(folder_name+'/stats.dat', 'w') as file:
-                            stats_header = '\t\t'.join(('a', 'b', 'c', 'E_P', 'R_P', 'I_P', 'B_P', 'g_func', 'h_func'))
-                            file.write(stats_header + '\n')
-                    
-                    # save stats and path coordinates
-                    with open(folder_name+'/stats.dat', 'a') as file:
-                        stats_with_weights = np.hstack([a,b,c,stats_sum])
-                        np.savetxt(file, [stats_with_weights], comments='', delimiter='\t', fmt='%-3f')
+                    if i == 1:
+                        with open(folder_name+'/stats.csv', 'w', newline='') as file:
+                            stats_header = ['Path no.', 'a', 'b', 'c', 'E_P', 'R_P', 'I_P', 'Length', 'No. pixel']
+                            writer = csv.writer(file, delimiter='\t')
+                            writer.writerow(stats_header)
 
-                    file_path = os.path.join(folder_name+'/raw/', f'path{len(done_weights)}.dat')
-                    np.savetxt(file_path, path_globe, delimiter='\t', fmt='%-3f')
+                    # Save stats and path coordinates
+                    with open(folder_name+'/stats.csv', 'a', newline='') as file:
+                        stats_with_weights = np.hstack([i, a, b, c, stats_sum[0:3], total_length, total_pixel])
+                        writer = csv.writer(file, delimiter='\t')
+                        writer.writerow(stats_with_weights)
+
+                    with open(folder_name+'/paths.csv', 'a', newline='') as csvfile:
+                        writer = csv.writer(csvfile, delimiter='\t')
+                        for coord_type in ["LON", "LAT"]:
+                            header = [f'Path {i} {coord_type}']
+                            coordinates = [str(coord[0 if coord_type == "LON" else 1]) for coord in path_globe]
+                            writer.writerow(header + coordinates)
 
     # Show the map with all paths
     plt.show()
@@ -99,15 +113,16 @@ def load_and_plot_paths(folder_path, show_in_one_plot=True, clustering_policy=Fa
     fig = plt.figure()
     for i, folder_path in enumerate(folder_path_list):
         # Load stats from the file
-        data = np.loadtxt(folder_path+'/stats.dat', skiprows=1)
+        data = np.loadtxt(folder_path+'/stats.csv', skiprows=1)
 
         # Extract columns
-        r = data[:, 0]
-        g = data[:, 1]
-        b = data[:, 2]
-        E_P = data[:, 3]
-        R_P = data[:, 4]
-        I_P = data[:, 5]
+        r = data[:, 1]
+        g = data[:, 2]
+        b = data[:, 3]
+        E_P = data[:, 4]
+        R_P = data[:, 5]
+        I_P = data[:, 6]
+        n_pixel = data[:, 8]
 
         # Create a 3D plot
         if show_in_one_plot:
@@ -116,7 +131,7 @@ def load_and_plot_paths(folder_path, show_in_one_plot=True, clustering_policy=Fa
             ax = fig.add_subplot(330+(3*i+2), projection='3d')
 
         # Get "average" path as baseline to compare other paths to
-        average_point_index = np.argmin(cdist(data[:,0:3], [[0.333333, 0.333333, 0.333333]]))
+        average_point_index = np.argmin(cdist(data[:,1:4], [[0.333333, 0.333333, 0.333333]]))
         print(f"Average path is at index {average_point_index}")
 
         # Perform KMeans clustering
@@ -127,11 +142,11 @@ def load_and_plot_paths(folder_path, show_in_one_plot=True, clustering_policy=Fa
 
             ax.scatter(E_P, R_P, I_P, c=labels, cmap='viridis', marker='o')
             closest_paths = []
-            all_points = data[:, 3:6]
+            all_points = data[:, 4:7]
 
             # Print information for each cluster
             for cluster_label, center in enumerate(cluster_centers):
-                cluster_points = data[labels == cluster_label, 3:6]
+                cluster_points = data[labels == cluster_label, 4:7]
 
                 # Find the point closest to the centroid
                 closest_point_index = np.argmin(cdist(all_points, [center]))
@@ -146,12 +161,12 @@ def load_and_plot_paths(folder_path, show_in_one_plot=True, clustering_policy=Fa
                 print(f"Cluster center: {center}")
                 print(f"Variance within cluster: {cluster_variance} with average of {np.average(cluster_variance)}")
                 print(f"Closest point to centroid: {closest_point}")
-                print(f"Weights of closest point: {data[closest_point_index,0]},{data[closest_point_index,1]},{data[closest_point_index,2]}")
+                print(f"Weights of closest point: {data[closest_point_index,1]},{data[closest_point_index,2]},{data[closest_point_index,3]}")
                 
                 # compare to average path
-                energysave = (data[average_point_index,3] - data[closest_point_index,3]) / data[average_point_index,3] * 100
-                risksave = (data[average_point_index,4] - data[closest_point_index,4]) / data[average_point_index,4] * 100
-                sciencegain = (data[closest_point_index,5] - data[average_point_index,5]) / data[average_point_index,3] * 100
+                energysave = (data[average_point_index,4] - data[closest_point_index,4]) / data[average_point_index,5] * 100
+                risksave = (data[average_point_index,5] - data[closest_point_index,5]) / data[average_point_index,5] * 100
+                sciencegain = (data[closest_point_index,6] - data[average_point_index,6]) / data[average_point_index,6] * 100
                 prewords = []
                 if energysave>0:
                     prewords.append('less')
@@ -215,26 +230,41 @@ def load_and_plot_paths(folder_path, show_in_one_plot=True, clustering_policy=Fa
         ax_pic.set_xlabel('LON')
         ax_pic.set_ylabel('LAT')
 
-        # Get folder to all paths and loop through each .dat file to plot the path
-        dat_files = [file for file in os.listdir(folder_path+'/raw/') if file.endswith('.dat') if file.startswith('path')]
-        for dat_file in dat_files:
-            file_path = os.path.join(folder_path+'/raw/', dat_file)
-            path_globe = np.loadtxt(file_path, delimiter='\t')
-            path_number = int(dat_file[4:-4])-1
+        # Loop through all paths and plot them
+        max_pixel = int(np.max(n_pixel))
+        df = pd.read_csv(folder_path+'/paths.csv', delimiter='\t', names=list(range(max_pixel+1)))
+        num_rows = int(df.shape[0]/2)
+
+        for path_number in range(num_rows):
+            lon = df.loc[2*path_number]
+            lat = df.loc[2*path_number+1]
+            path_globe = np.array([(float(lon.iloc[i]), float(lat.iloc[i])) for i in range(1,lon.last_valid_index()+1)])
             if clustering_policy:
                 color = sc.cmap(sc.norm(labels[path_number]))
-                ax_pic.plot(path_globe[:, 0], path_globe[:, 1], color=color, linewidth=2)
+                ax_pic.plot(path_globe[:,0], path_globe[:,1], color=color, linewidth=2)
             else:
-                ax_pic.plot(path_globe[:, 0], path_globe[:, 1], color=[r[path_number], g[path_number], b[path_number]], linewidth=2)
-        
+                ax_pic.plot(path_globe[:,0], path_globe[:,1], color=[r[path_number], g[path_number], b[path_number]], linewidth=2)
+
         if clustering_policy:
             for number in closest_paths:
-                path_highlight = np.loadtxt(folder_path+'/raw/path'+str(number)+'.dat', delimiter='\t')
-                ax_pic.plot(path_highlight[:, 0], path_highlight[:, 1], 'r:', linewidth=2)
-
+                lon = df.loc[2*number]
+                lat = df.loc[2*number+1]
+                path_globe = np.array([(float(lon.iloc[i]), float(lat.iloc[i])) for i in range(1,lon.last_valid_index()+1)])
+                ax_pic.plot(path_globe[:,0], path_globe[:,1], 'r:', linewidth=2)
 
     # Show the plot
-    # plt.show()
+    plt.show()
+
+
+def load_and_resave_paths(folder_path):
+    dat_files = [file for file in os.listdir(folder_path + '/raw/') if file.endswith('.dat') if file.startswith('path')]
+    paths = []
+    for dat_file in dat_files:
+        file_path = os.path.join(folder_path + '/raw/', dat_file)
+        path_globe = np.loadtxt(file_path, delimiter='\t')
+        paths.append(path_globe)
+
+    print(paths)
 
 
 def plot_rgb_circle():
@@ -373,7 +403,7 @@ if __name__ == '__main__':
     # create_and_plot_distribution(10)
 
     # CALC PATHS
-    # create_paths(10, True)
+    #create_paths(10, True)
 
     # SORT PATHS
     # grouped_paths = sort_paths('src/globalplanner/data/124_log/raw/')
@@ -384,7 +414,10 @@ if __name__ == '__main__':
     # PLOT PATHS AND STATS
     # load_and_plot_paths('src/globalplanner/data/1000', show_in_one_plot=False)
     # load_and_plot_paths('src/globalplanner/data/1000_log', show_in_one_plot=True)
-    load_and_plot_paths('src/globalplanner/data/1000_log_scew', show_in_one_plot=True,
-                        clustering_policy=True, n_clusters=5)
-    plt.show()
+    load_and_plot_paths('src/globalplanner/data/1000_new', show_in_one_plot=True,
+                        clustering_policy=True, n_clusters=3)
+
+    #load_and_resave_paths('src/globalplanner/data/1000_new')
+
+    #plt.show()
 

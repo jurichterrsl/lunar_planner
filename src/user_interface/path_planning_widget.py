@@ -398,7 +398,7 @@ class PathPlanningWidget(QtWidgets.QWidget):
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    setup = setup_file.Setup('../mapdata/', 0.5, 0.5, 0, False)  # Make sure to provide appropriate parameters
+    setup = setup_file.Setup('src/mapdata/', 0.5, 0.5, 0, False)  # Make sure to provide appropriate parameters
     path_planning_widget = PathPlanningWidget(setup)
     path_planning_widget.show()
     sys.exit(app.exec_())

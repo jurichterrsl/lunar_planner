@@ -8,7 +8,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import numpy as np
 
-class MapWidget(QtWidgets.QWidget):
+class MapWidget(QtWidgets.QMainWindow):
     '''
         Child class of the Qt QWidget.
 
@@ -26,7 +26,6 @@ class MapWidget(QtWidgets.QWidget):
     # DEFAULT_CMAP = colors.LinearSegmentedColormap.from_list\
     #     ("", ["darkslategray","mediumturquoise",'#c9a687','#a6611a'])
     DEFAULT_CMAP = 'viridis'
-    FONTSIZE = 11
 
     def __init__(self, width, height, extent, pixel_size, map_image, maps_array, \
                  layer_names, toolbar, plot_global):
@@ -47,26 +46,24 @@ class MapWidget(QtWidgets.QWidget):
         '''
         super().__init__()
 
-        layout = QtWidgets.QVBoxLayout(self)
+        self._main = QtWidgets.QWidget()
+        self.setCentralWidget(self._main)
+        layout = QtWidgets.QVBoxLayout(self._main)
 
         self.figure = Figure()
         self.axis = self.figure.add_subplot(111)
         self.cbar = None
         self.canvas = FigureCanvasQTAgg(self.figure)
         layout.addWidget(self.canvas)
-
-        self.figure.subplots_adjust(left=0.05, right=0.90, bottom=0.15, top=0.9)
-
         if toolbar:
             self.toolbar = NavigationToolbar(self.canvas, self)
             layout.addWidget(self.toolbar)
 
         if plot_global:
-            self.xlabel = 'LON [deg]'
-            self.ylabel = 'LAT [deg]'
-            self.axis.set_title("Calculated paths")
-            self.axis.set_xlabel(self.xlabel, fontsize=10)
-            self.axis.set_ylabel(self.ylabel, fontsize=10)
+            self.xlabel = 'LON'
+            self.ylabel = 'LAT'
+            self.axis.set_xlabel(self.xlabel, fontsize=24)
+            self.axis.set_ylabel(self.ylabel, fontsize=24)
             self.xmin, self.ymin, self.xmax, self.ymax = extent
             self.extent = (self.xmin, self.xmax, self.ymin, self.ymax)
             self.aspect_ratio = abs(self.xmax-self.xmin) / abs(self.ymax-self.ymin) * \
@@ -74,11 +71,11 @@ class MapWidget(QtWidgets.QWidget):
         else:
             self.xlabel = 'x [m]'
             self.ylabel = 'y [m]'
-            self.axis.set_xlabel(self.xlabel, fontsize=self.FONTSIZE)
-            self.axis.set_ylabel(self.ylabel, fontsize=self.FONTSIZE)
+            self.axis.set_xlabel(self.xlabel, fontsize=24)
+            self.axis.set_ylabel(self.ylabel, fontsize=24)
             self.extent = (0, width*pixel_size, 0, height*pixel_size)
             self.aspect_ratio = 'equal'
-        self.axis.tick_params(axis='both', which='major', labelsize=self.FONTSIZE-4)
+        self.axis.tick_params(axis='both', which='major', labelsize=20)
         
         self.map_img = map_image
         self.maps_array = maps_array
@@ -111,13 +108,13 @@ class MapWidget(QtWidgets.QWidget):
             self.cbar = self.figure.colorbar(self.img)
             self.cbar.ax.set_ylabel(self.layer_names[layer])
 
-        self.axis.set_xlabel(self.xlabel, fontsize=self.FONTSIZE)
-        self.axis.set_ylabel(self.ylabel, fontsize=self.FONTSIZE)
+        self.axis.set_xlabel(self.xlabel, fontsize=24)
+        self.axis.set_ylabel(self.ylabel, fontsize=24)
         self.axis.xaxis.set_major_formatter(ticker.StrMethodFormatter('{x:.4f}'))
         self.axis.yaxis.set_major_formatter(ticker.StrMethodFormatter('{x:.4f}'))
         self.axis.xaxis.set_major_locator(ticker.MaxNLocator(4))
         self.axis.yaxis.set_major_locator(ticker.MaxNLocator(5))
-        self.axis.tick_params(axis='both', which='major', labelsize=10)
+        self.axis.tick_params(axis='both', which='major', labelsize=24)
 
         self.canvas.draw()
 
@@ -152,16 +149,26 @@ class MapWidget(QtWidgets.QWidget):
         self.canvas.draw()
         
 
-    def plot_path_on_canvas(self, path, color):
+    def plot_path_on_canvas(self, path, type):
         '''
         Plots path on whichever picture was shown before
             Parameters:
                 path (ndarray): 2D array with coordinates and size (n, 2)
                 type (String): Defines style of line ('planned_path'/'tracked_path')
         '''
-        self.axis.plot(path[:,0], path[:,1], color, linewidth=3)
-        self.canvas.draw()
-
+        if type=='planned_path':
+            color = 'r'
+        elif type=='tracked_path':
+            color = 'lime'
+        else:
+            print("The path type '"+type+"' is not known to the program. Possible options \
+                  are 'planned_path' or 'tracked_path'.")
+        try:
+            self.axis.plot(path[:,0], path[:,1], color, linewidth=3)
+            self.canvas.draw()
+        except TypeError:
+            pass
+        
 
     def plot_point_on_canvas(self, coordinate, type):
         '''
@@ -250,12 +257,12 @@ class MapWidget(QtWidgets.QWidget):
 
         for i, ax in enumerate(self.axis.flat):
             ax.imshow(self.map_img, extent=self.extent, aspect = self.aspect_ratio)
-            ax.set_xlabel('x [m]', fontsize = self.FONTSIZE-4)
-            ax.set_ylabel('y [m]', fontsize = self.FONTSIZE-4)
+            ax.set_xlabel('x [m]', fontsize = 18)
+            ax.set_ylabel('y [m]', fontsize = 18)
             #ax.xaxis.set_major_formatter(ticker.StrMethodFormatter('{x:.3f}'))
             #ax.yaxis.set_major_formatter(ticker.StrMethodFormatter('{x:.3f}'))
-            ax.set_title('Path segment '+str(i+1), fontsize=self.FONTSIZE-4)
-            ax.tick_params(axis='both', which='major', labelsize=self.FONTSIZE-6)
+            ax.set_title('Path segment '+str(i+1), fontsize = 22)
+            ax.tick_params(axis='both', which='major', labelsize=18)
         
         self.canvas.draw()
 
@@ -271,8 +278,8 @@ class MapWidget(QtWidgets.QWidget):
         self.axis.flat[i].set(xlabel=self.xlabel, ylabel=self.ylabel)
         #self.axis.flat[i].xaxis.set_major_formatter(ticker.StrMethodFormatter('{x:.3f}'))
         #self.axis.flat[i].yaxis.set_major_formatter(ticker.StrMethodFormatter('{x:.3f}'))
-        self.axis.flat[i].set_title('Path segment '+str(i+1), fontsize=self.FONTSIZE)
-        self.axis.flat[i].tick_params(axis='both', which='major', labelsize=self.FONTSIZE-6)
+        self.axis.flat[i].set_title('Path segment '+str(i+1), fontsize = 22)
+        self.axis.flat[i].tick_params(axis='both', which='major', labelsize=18)
         self.canvas.draw()
 
 

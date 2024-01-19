@@ -24,3 +24,4 @@ path, stats = astar.astar(setup.map_size_in_pixel, start_pixel, goal_pixel, setu
 # Show result
 path_globe = transform.from_pixel_to_globe(path, setup)
 setup.maps.show_image_with_path(path_globe)
+

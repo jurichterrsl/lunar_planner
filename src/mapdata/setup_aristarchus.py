@@ -55,12 +55,12 @@ class Setup:
         self.maps = maps.Maps(self.map_size_in_pixel, n_layers,
                                    self.path_to_root+"Aristarchus_IMP/height_slope_rockabundance.tif",
                                    self.path_to_root+"Aristarchus_IMP/pic.png",
-                                   layer_description=['Height map', 'Slope', 'Rock abundance'],
+                                   layer_description=['Height map [m]', 'Slope [deg]', 'Rock abundance'],
                                    plot_global=self.PLOT_GLOBAL)
         
         # Add further tif files if needed
         self.maps.load_npy_file_and_add_to_array(self.path_to_root+'Aristarchus_IMP/banned_blurred.npy',
-                                                 'Scientific interest')
+                                                 'Scientific relevance')
         self.maps.load_npy_file_and_add_to_array(self.path_to_root+'Aristarchus_IMP/banned.npy',
                                                  'Banned areas')
         
