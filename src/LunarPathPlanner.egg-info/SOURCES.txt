@@ -33,9 +33,9 @@ src/scripts/various/save_rosbag_to_file.py
 src/scripts/various/energy_related/analyse_energy_data.py
 src/scripts/various/energy_related/plot_3D.py
 src/user_interface/__init__.py
+src/user_interface/cluster_widget.py
 src/user_interface/map_widget.py
 src/user_interface/map_widget_old.py
 src/user_interface/path_analysis.py
 src/user_interface/path_planning_widget.py
-src/user_interface/ui/cluster_widget.py
 src/user_interface/ui/myplugin.py

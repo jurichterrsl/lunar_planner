@@ -151,7 +151,7 @@ def load_and_plot_paths(folder_path, show_in_one_plot=True, clustering_policy=Fa
                 # Find the point closest to the centroid
                 closest_point_index = np.argmin(cdist(all_points, [center]))
                 closest_point = all_points[closest_point_index]
-                closest_paths.append(closest_point_index+1)
+                closest_paths.append(closest_point_index)
 
                 # Calculate variance within the cluster
                 cluster_variance = np.var(cluster_points, axis=0)
@@ -211,7 +211,7 @@ def load_and_plot_paths(folder_path, show_in_one_plot=True, clustering_policy=Fa
         else:
             sc = ax_legend.scatter(r, g, b, c=np.column_stack((r, g, b)), marker='o')
         for highlight in closest_paths:
-            ax_legend.scatter(r[highlight-1], g[highlight-1], b[highlight-1], color='red', marker='o', s=100)
+            ax_legend.scatter(r[highlight], g[highlight], b[highlight], color='red', marker='o', s=100)
         ax_legend.set_xlabel('alpha')
         ax_legend.set_ylabel('beta')
         ax_legend.set_zlabel('gamma')
@@ -245,6 +245,8 @@ def load_and_plot_paths(folder_path, show_in_one_plot=True, clustering_policy=Fa
             else:
                 ax_pic.plot(path_globe[:,0], path_globe[:,1], color=[r[path_number], g[path_number], b[path_number]], linewidth=2)
 
+        print ("Closests paths have index: ", [data[i,0] for i in closest_paths])
+        print ("The shown paths are: ", [(df.loc[2*i,0], df.loc[2*i+1,0]) for i in closest_paths])
         if clustering_policy:
             for number in closest_paths:
                 lon = df.loc[2*number]
@@ -403,7 +405,7 @@ if __name__ == '__main__':
     # create_and_plot_distribution(10)
 
     # CALC PATHS
-    #create_paths(10, True)
+    # create_paths(10, True)
 
     # SORT PATHS
     # grouped_paths = sort_paths('src/globalplanner/data/124_log/raw/')

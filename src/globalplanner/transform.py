@@ -15,17 +15,23 @@ def from_pixel_to_globe(coordinates, setup):
             transformed_coordinates (ndarray): 2D array with size (n,2)
     '''
     # Extract x and y coordinates from the input array or the tupel ist
-    coordinates_sim = from_pixel_to_sim(coordinates, setup)
-    return from_sim_to_globe(coordinates_sim, setup)
+    coordinates_sim = from_pixel_to_map(coordinates, setup)
+    return from_map_to_globe(coordinates_sim, setup)
 
 
 def from_globe_to_pixel(coordinates, setup):
     # Extract x and y coordinates from the input array or the tupel ist
-    coordinates_sim = from_globe_to_sim(coordinates, setup)
-    return from_sim_to_pixel(coordinates_sim, setup)
-        
+    coordinates_sim = from_globe_to_map(coordinates, setup)
+    return from_map_to_pixel(coordinates_sim, setup)
 
-def from_pixel_to_sim(coordinates, setup):
+
+# def from_globe_to_map(coordinates, setup):
+#     # Extract x and y coordinates from the input array or the tupel ist
+#     coordinates_sim = from_globe_to_pixel(coordinates, setup)
+#     return from_pixel_to_map(coordinates_sim, setup)
+
+
+def from_pixel_to_map(coordinates, setup):
     '''
     Transforms an array of coordinates or a list of tupels in pixel into the coordinates of a map
         Parameters:
@@ -58,7 +64,7 @@ def from_pixel_to_sim(coordinates, setup):
         return [tuple(row) for row in np.column_stack((transformed_x, transformed_y))]
 
 
-def from_sim_to_pixel(coordinates, setup):
+def from_map_to_pixel(coordinates, setup):
     '''
     Transforms an array of coordinates or a list of tupels in pixel into the coordinates of a map
         Parameters:
@@ -113,7 +119,7 @@ def array_to_tupellist(array):
     return [tuple(row) for row in array]
 
 
-def from_globe_to_sim(coordinates, setup):
+def from_globe_to_map(coordinates, setup):
     '''
     Transforms one pair of coordinates from the globe coordinates to coordinates of the simulation
         Parameters:
@@ -151,7 +157,7 @@ def from_globe_to_sim(coordinates, setup):
         return [tuple(row) for row in np.column_stack((x_transformed, y_transformed))]
 
 
-def from_sim_to_globe(coordinates, setup):
+def from_map_to_globe(coordinates, setup):
     '''
     Transforms one pair of coordinates from coordinates of the simulation to the globe coordinates
         Parameters:
