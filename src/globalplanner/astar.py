@@ -3,8 +3,7 @@
 import heapq
 import numpy as np
 
-
-def astar(map_size, start, goal, h_func, g_func, allow_diagonal):
+def astar(map_size, start, goal, setup, allow_diagonal):
     '''
     Core A* function that calculates the best path and returns it as a list of tuples
 
@@ -22,18 +21,16 @@ def astar(map_size, start, goal, h_func, g_func, allow_diagonal):
     open_set = []
     heapq.heappush(open_set, (0, start))  # Priority queue ordered by cost
     came_from = {}
-    g_score = {start: 0}
-    f_score = {start: h_func(start, goal)}  # Estimated total cost from start to goal
+    costcomponents = 4 # defined in setup function
+    g_score = {start: [0]*(costcomponents+1)}
+    f_score = {start: setup.h_func(start, goal)}  # Estimated total cost from start to goal
     closed_set = set()
 
     while open_set:
         _, current = heapq.heappop(open_set)
 
         if current == goal:
-            # path = reconstruct_path(came_from, current, g_func, h_func, goal)
-            # _, rows = map_size
-            # path[0][:,1] = rows - path[0][:,1]
-            return reconstruct_path(came_from, current, g_func, h_func, goal)
+            return reconstruct_path(came_from, current, setup.g_func, setup.h_func, goal)
 
         closed_set.add(current)
 
@@ -41,15 +38,18 @@ def astar(map_size, start, goal, h_func, g_func, allow_diagonal):
             if neighbor in closed_set:
                 continue
 
-            new_g_score = g_score[current] + g_func(neighbor, current)
-            if neighbor not in g_score or new_g_score < g_score[neighbor]:
+            new_g_score = [x + y for x, y in zip(g_score[current], setup.g_func(neighbor, current))]
+            if setup.max_func(new_g_score):
+                new_g_score[costcomponents] = np.inf
+
+            if new_g_score[costcomponents] < np.inf and (neighbor not in g_score or new_g_score[costcomponents] < g_score[neighbor][costcomponents]):
                 g_score[neighbor] = new_g_score
-                f_score[neighbor] = new_g_score + h_func(neighbor, goal)
+                f_score[neighbor] = new_g_score[costcomponents] + setup.h_func(neighbor, goal)
                 heapq.heappush(open_set, (f_score[neighbor], neighbor))
                 came_from[neighbor] = current
 
     print('No path found. Check input parameters.')
-    return -1, -1  # No path found
+    return -1, [-1]  # No path found
 
 
 def get_neighbors(node, map_size, allow_diagonal=False):
@@ -97,35 +97,10 @@ def reconstruct_path(came_from, current, g_func, h_func, goal):
     while current in came_from:
         previous = came_from[current]
         path.append(previous)
-        cost.append(g_func(current, previous, True)+(h_func(previous, goal),))
+        cost.append(g_func(current, previous)+(h_func(previous, goal),))
         #cost.append((g_func(current, previous),(h_func(previous, goal))))
         current = previous
     tupellist = list(reversed(path))
     stats = list(reversed(cost))
     return np.array([list(t) for t in tupellist]), stats
 
-
-def example(): 
-    '''One arbitrary example how to run the algorithm'''
-    # Define the map, start and goal positions
-    map = np.random.random((10, 10))
-    map_size = (map.shape[0], map.shape[1])
-    start = (0, 0)
-    goal = (9, 9)
-
-    # Define the heuristic function h(x, y)
-    def h_func(node, goal):
-        x, y = node
-        return abs(goal[0] - x) + abs(goal[1] - y)
-
-    # Define the cost function g(x, y)
-    def g_func(node, current):
-        x, y = node
-        return map[x][y]  # Cost based on the map value
-
-    # Run A* algorithm
-    path = astar(map_size, start, goal, h_func, g_func, False)
-    print(path) 
-
-if __name__ == "__main__":
-    example()

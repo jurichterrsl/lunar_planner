@@ -5,13 +5,16 @@ import numpy as np
 import os
 from python_qt_binding import loadUi
 from PyQt5 import QtWidgets
-from qt_gui.plugin import Plugin
 from mapdata.setup_aristarchus import Setup
 from globalplanner import transform, astar
 from user_interface.map_widget import MapWidget
 from itertools import product
 import csv
 import pandas as pd
+
+import time
+import resource
+from datetime import datetime
 
 
 class PathCreatorPlugin(QtWidgets.QWidget):
@@ -97,13 +100,20 @@ class PathCreatorPlugin(QtWidgets.QWidget):
     def load_path(self, event):
         # Load path
         input_str = self.pathinput.text()
-        pairs = input_str.replace('(', '').replace(')', '').split(',')
-        self.delete_path(0)
-        self.waypoints = [(float(pairs[i]), float(pairs[i + 1])) for i in range(0, len(pairs), 2)]
-        # Show path
-        self.mapframe.plot_path_on_canvas(self.waypoints, 'red')
-        for point in self.waypoints:
-            self.mapframe.plot_point_on_canvas(point, 'ro')
+        if len(input_str)>0:
+            pairs = input_str.replace('(', '').replace(')', '').split(',')
+            self.delete_path(0)
+
+            try:
+                self.waypoints = [(float(pairs[i]), float(pairs[i + 1])) for i in range(0, len(pairs), 2)]
+                if len(self.waypoints)>1:
+                    # Show path
+                    self.mapframe.plot_path_on_canvas(self.waypoints, 'red')
+                    for point in self.waypoints:
+                        self.mapframe.plot_point_on_canvas(point, 'ro')
+                    self.calculatebutton.setEnabled(True)
+            except:
+                pass
 
 
     def delete_path(self, _):
@@ -132,11 +142,12 @@ class PathCreatorPlugin(QtWidgets.QWidget):
         '''Clicking with the right mouse button sets a new goal on the canvas'''
         input_point = (event.xdata, event.ydata)
         if event.button == 1:
-            self.waypoints.append(input_point)
-            self.mapframe.plot_point_on_canvas(input_point, 'ro')
-            if len(self.waypoints)>=2:
-                self.mapframe.plot_path_on_canvas([self.waypoints[len(self.waypoints)-2], input_point], 'red')
-                self.calculatebutton.setEnabled(True)
+            if input_point[0] is not None and input_point[1] is not None:
+                self.waypoints.append(input_point)
+                self.mapframe.plot_point_on_canvas(input_point, 'ro')
+                if len(self.waypoints)>=2:
+                    self.mapframe.plot_path_on_canvas([self.waypoints[len(self.waypoints)-2], input_point], 'red')
+                    self.calculatebutton.setEnabled(True)
 
 
     def calculate_path(self, event):
@@ -173,6 +184,7 @@ class PathCreatorPlugin(QtWidgets.QWidget):
         '''This function first creates a distribtion between the three path optimization weights and
         thereafter calculates paths for each combination'''
         # Iterate over different combinations of a, b, and c
+        scale = 10
         a_values = np.logspace(0, 1, scale)
         b_values = np.logspace(0, 1, scale)
         c_values = np.logspace(0, 1, scale)
@@ -185,11 +197,13 @@ class PathCreatorPlugin(QtWidgets.QWidget):
         
         done_weights = []
         i=0
+        start_time = time.time()
         for a, b, c in product(a_values, b_values, c_values):
             if a+b+c!=0:
                 # Status
                 i += 1
                 self.progressBar.setValue(int(((segmentindex-1)/num_segments + i/(n*num_segments))*100))
+                QtWidgets.QApplication.processEvents()
                 [a,b,c] = [a,b,c]/(a+b+c)
 
                 if [a,b,c] not in done_weights:
@@ -197,7 +211,7 @@ class PathCreatorPlugin(QtWidgets.QWidget):
                     setup = Setup('src/mapdata/', a, b, c, plot_global=True)
 
                     # Run A* algorithm
-                    path, stats = astar.astar(setup.map_size_in_pixel, start_pixel, goal_pixel, setup.h_func, setup.g_func, allow_diagonal=True)
+                    path, stats = astar.astar(setup.map_size_in_pixel, start_pixel, goal_pixel, setup, allow_diagonal=True)
                     path_globe = transform.from_pixel_to_globe(path, setup)
                     path_sim = transform.from_pixel_to_map(path, setup)
 
@@ -227,7 +241,9 @@ class PathCreatorPlugin(QtWidgets.QWidget):
                             header = [f'Path {i} {coord_type}']
                             coordinates = [str(coord[0 if coord_type == "LON" else 1]) for coord in path_globe]
                             writer.writerow(header + coordinates)
-
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print('The calculation took: '+str(elapsed_time/60)+' Minutes.')
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here

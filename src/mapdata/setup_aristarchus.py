@@ -50,6 +50,8 @@ class Setup:
         # Define static parameters of the map
         self.map_size_in_pixel = (256, 256)
         n_layers = 5
+        self.costcomponents = 4 #E_P, R_P, I_P, B_P
+        self.energyreserve = 73060 #Nm^2
 
         # Create Maps object with first tif file
         self.maps = maps.Maps(self.map_size_in_pixel, n_layers,
@@ -89,7 +91,7 @@ class Setup:
         return self.ALPHA * self.E_min * self.getdistance(node, goal)/8
 
 
-    def g_func(self, current, previous, output_separately=False):
+    def g_func(self, current, previous):
         '''
         Define the cost function g(x, y) that calculates the cost from previous to current node
             Parameters:
@@ -107,35 +109,26 @@ class Setup:
         s = math.degrees(math.atan((maps[x,y,0]-maps[x0,y0,0]) / (distance*abs(self.maps.pixel_size))))
         t = maps[x,y,2]
 
-        if output_separately:
-            if (-30 <= s <= 30) and (t <= 0.3):
-                E_P = self.E(s,t,distance)/self.E_max
-                R_P = self.R(s,t,distance)/self.R_max
-            else:
-                E_P = math.inf
-                R_P = math.inf
-            I_P = 1-maps[x,y,3]
-            if maps[x,y,4]==1:
-                B_P = math.inf
-            else:
-                B_P = 0
-
-            total = self.ALPHA * E_P + self.BETA * R_P + self.GAMMA * I_P
-            return E_P, R_P, I_P, B_P, total
-
+        if (-30 <= s <= 30) and (t <= 0.3):
+            E_P = self.E(s,t,distance)/self.E_max
+            R_P = self.R(s,t,distance)/self.R_max
         else:
-            if (-30 <= s <= 30) and (t <= 0.3):
-                E_P = self.E(s,t,distance)/self.E_max
-                R_P = self.R(s,t,distance)/self.R_max
-            else:
-                return math.inf
-            I_P = 1-maps[x,y,3]
-            if maps[x,y,4]==1:
-                return math.inf
-            else:
-                B_P = 0
+            E_P = math.inf
+            R_P = math.inf
+        I_P = 1-maps[x,y,3]
+        if maps[x,y,4]==1:
+            B_P = math.inf
+        else:
+            B_P = 0
 
-            return self.ALPHA * E_P + self.BETA * R_P + self.GAMMA * I_P     
+        total = self.ALPHA * E_P + self.BETA * R_P + self.GAMMA * I_P
+        return E_P, R_P, I_P, B_P, total
+
+
+    def max_func(self, g_score):
+        '''Function to check the hard constraints'''
+        if g_score[0] >= self.energyreserve/(345*3.255):
+            return True
 
 
     def E(self, s, r, distance):
