@@ -1,0 +1,5 @@
+/.venv
+/.vscode
+/src/auto_map_downloader
+/src/LunarPathPlanner.egg-info
+/src/globalplanner/data
