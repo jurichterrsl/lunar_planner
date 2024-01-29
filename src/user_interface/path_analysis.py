@@ -11,6 +11,7 @@ from sklearn.cluster import KMeans
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import pandas as pd
 from matplotlib import cm
+from PyQt5.QtGui import QColor, QBrush
 
 
 class MyQtMainWindow(QtWidgets.QMainWindow):
@@ -44,6 +45,18 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
         layout_clusterwidget = QtWidgets.QVBoxLayout(self.analysisplot)
         layout_clusterwidget.addWidget(self.clusterwidget)
         layout_clusterwidget.addWidget(self.toolbar)
+
+        # Prepare table
+        self.analysistable.setRowCount(4)
+        self.analysistable.setColumnCount(12)
+
+        titles_tabel1 = ['','Weights','','','Energy','','Risk','','Science','','# Paths in cluster','Custer var']
+        titles_tabel2 = ['','alpha','beta','gamma','[kNm^2]','cmp to base','%','cmp to base','% of path','cmp to base','','']
+        for i, title in enumerate(titles_tabel1):
+            self.analysistable.setItem(0, i, QtWidgets.QTableWidgetItem(title))
+        for i, title in enumerate(titles_tabel2):
+            self.analysistable.setItem(1, i, QtWidgets.QTableWidgetItem(title))
+        self.analysistable.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
 
         # Init other ui parts
         self.getpathfolder.clicked.connect(self.define_path_folder)
@@ -99,7 +112,13 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
         # Load stats from the file
         data = np.loadtxt(self.project_folder+self.stats_files[current_segment], skiprows=1)
         n_clusters = self.numberofclusters.value()
-        
+
+        # Adapt table
+        self.analysistable.setRowCount(n_clusters+3)
+        self.analysistable.setItem(2, 0, QtWidgets.QTableWidgetItem('Baseline'))
+        for i in range(n_clusters):
+            self.analysistable.setItem(i+3, 0, QtWidgets.QTableWidgetItem('Path '+str(i+1)))
+
         # Extract columns
         r = data[:, 1]
         g = data[:, 2]
@@ -109,9 +128,6 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
         I_P = data[:, 6]
         n_pixel = data[:, 8]
 
-        # Define path for comparison
-        average_point_index = np.argmin(cdist(data[:,1:4], [[0.333333, 0.333333, 0.333333]]))
-
         # Calculate clusters
         kmeans = KMeans(n_clusters=n_clusters, random_state=0, n_init='auto').fit(np.column_stack((E_P, R_P, I_P)))
         labels = kmeans.labels_
@@ -119,6 +135,38 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
         self.clusterwidget.plot(E_P, R_P, I_P, color=labels)
         closest_paths = []
         all_points = data[:, 4:7]
+
+        # Load path file
+        max_pixel = int(np.max(n_pixel))
+        df = pd.read_csv(self.project_folder+self.paths_files[current_segment], delimiter='\t', names=list(range(max_pixel+1)))
+        num_rows = int(df.shape[0]/2)
+        self.current_paths = []
+        self.colors = []
+
+        # Define path for comparison
+        average_point_index = np.argmin(cdist(data[:,1:4], [[0.333333, 0.333333, 0.333333]]))
+
+        # Load specs of baseline and add to table
+        lon = df.loc[2*average_point_index]
+        lat = df.loc[2*average_point_index+1]
+        path_globe_baseline = np.array([(float(lon.iloc[i]), float(lat.iloc[i])) for i in range(1,lon.last_valid_index()+1)])
+        self.current_paths.append(path_globe_baseline)
+        self.colors.append('r')
+
+        energy_base = data[average_point_index,4] * 345 * 3.255 / 1000
+        # risk = 1 - (1-results[1]*(1-(1-0.01512)**(3.255/8)))**(8/3.255) TODO
+        science_base = 1 - data[average_point_index,6]/path_globe_baseline.shape[0]
+
+        self.analysistable.item(2,0).setBackground(QBrush(QColor(255, 0, 0, 80)))
+        self.analysistable.setItem(2, 1, QtWidgets.QTableWidgetItem(str(round(data[average_point_index,1],4))))
+        self.analysistable.setItem(2, 2, QtWidgets.QTableWidgetItem(str(round(data[average_point_index,2],4))))
+        self.analysistable.setItem(2, 3, QtWidgets.QTableWidgetItem(str(round(data[average_point_index,3],4))))
+        self.analysistable.setItem(2, 4, QtWidgets.QTableWidgetItem(str(round(energy_base,2))))
+        self.analysistable.setItem(2, 5, QtWidgets.QTableWidgetItem('0.0%'))
+        self.analysistable.setItem(2, 6, QtWidgets.QTableWidgetItem('TODO'))
+        self.analysistable.setItem(2, 7, QtWidgets.QTableWidgetItem('0.0%'))
+        self.analysistable.setItem(2, 8, QtWidgets.QTableWidgetItem(str(round(science_base*100,2))))
+        self.analysistable.setItem(2, 9, QtWidgets.QTableWidgetItem('0.0%'))
 
         # Create data for comparison table
         for cluster_label, center in enumerate(cluster_centers):
@@ -129,67 +177,48 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
             closest_point = all_points[closest_point_index]
             closest_paths.append(closest_point_index)
 
+            # Show cluster plot
+            self.clusterwidget.plot_highlight(closest_point)
+
             # Calculate variance within the cluster
             cluster_variance = np.var(cluster_points, axis=0)
 
-            # # Data for comparison table
-            # print(f"Cluster {cluster_label + 1}:")
-            # print(f"Number of paths in cluster: {len(cluster_points)}")
-            # print(f"Cluster center: {center}")
-            # print(f"Variance within cluster: {cluster_variance} with average of {np.average(cluster_variance)}")
-            # print(f"Closest point to centroid: {closest_point}")
-            # print(f"Weights of closest point: {data[closest_point_index,1]},{data[closest_point_index,2]},{data[closest_point_index,3]}")
-            
-            # # compare to average path
-            # energysave = (data[average_point_index,4] - data[closest_point_index,4]) / data[average_point_index,5] * 100
-            # risksave = (data[average_point_index,5] - data[closest_point_index,5]) / data[average_point_index,5] * 100
-            # sciencegain = (data[closest_point_index,6] - data[average_point_index,6]) / data[average_point_index,6] * 100
-            # prewords = []
-            # if energysave>0:
-            #     prewords.append('less')
-            # else: 
-            #     prewords.append('more')
-            # if risksave>0:
-            #     prewords.append('less')
-            # else:
-            #     prewords.append('more')
-            # if sciencegain>0: 
-            #     prewords.append('less')
-            # else:
-            #     prewords.append('more')
-            # print(f"This path has {np.abs(energysave)}% "+prewords[0]+f" energy consumption, {np.abs(risksave)}% "+
-            #         prewords[1]+f" risk and {np.abs(sciencegain)}% "+prewords[2]+" scientific outcome than baseline.")
-            # print()
+            # Plot path in mapwiget TOOOOODOOOOOO
+            sc = self.clusterwidget.scatter_plot
 
-            self.clusterwidget.plot_highlight(closest_point)
-
-        # Loop through all paths and plot them
-        max_pixel = int(np.max(n_pixel))
-        df = pd.read_csv(self.project_folder+self.paths_files[current_segment], delimiter='\t', names=list(range(max_pixel+1)))
-        num_rows = int(df.shape[0]/2)
-
-        # for path_number in range(num_rows):
-        #     lon = df.loc[2*path_number]
-        #     lat = df.loc[2*path_number+1]
-        #     path_globe = np.array([(float(lon.iloc[i]), float(lat.iloc[i])) for i in range(1,lon.last_valid_index()+1)])
-        #     sc = self.clusterwidget.scatter_plot
-        #     color = sc.cmap(sc.norm(labels[path_number]))
-        #     print(path_globe)
-        #     print(color)
-        #     self.mapwidget.plot_path_on_canvas(path_globe, color)
-
-        
-        self.current_paths = []
-        self.colors = []
-        sc = self.clusterwidget.scatter_plot
-        for number in closest_paths:
-            lon = df.loc[2*number]
-            lat = df.loc[2*number+1]
+            lon = df.loc[2*closest_point_index]
+            lat = df.loc[2*closest_point_index+1]
             path_globe = np.array([(float(lon.iloc[i]), float(lat.iloc[i])) for i in range(1,lon.last_valid_index()+1)])
-            color = sc.cmap(sc.norm(labels[number]))
+            color = sc.cmap(sc.norm(labels[closest_point_index]))
             self.current_paths.append(path_globe)
             self.colors.append(color)
 
+            # Data for comparison table            
+            energy = data[closest_point_index,4] * 345 * 3.255 / 1000
+            # risk = 1 - (1-results[1]*(1-(1-0.01512)**(3.255/8)))**(8/3.255) TODO
+            science = 1 - data[closest_point_index,6]/path_globe.shape[0]
+            energysave = (energy-energy_base)/energy_base * 100
+            sciencegain = (science-science_base)/science_base * 100
+            # energysave = (data[closest_point_index,4] - data[average_point_index,4]) / data[average_point_index,5] * 100
+            # risksave = (data[closest_point_index,5] - data[average_point_index,5]) / data[average_point_index,5] * 100
+            # sciencegain = (data[average_point_index,6] - data[closest_point_index,6]) / data[average_point_index,6] * 100
+
+            color = [int(i*255) for i in color]
+            self.analysistable.item(cluster_label+3,0).setBackground(QBrush(QColor(*color[:3], 80)))
+            self.analysistable.setItem(cluster_label+3, 1, QtWidgets.QTableWidgetItem(str(round(data[closest_point_index,1],4))))
+            self.analysistable.setItem(cluster_label+3, 2, QtWidgets.QTableWidgetItem(str(round(data[closest_point_index,2],4))))
+            self.analysistable.setItem(cluster_label+3, 3, QtWidgets.QTableWidgetItem(str(round(data[closest_point_index,3],4))))
+            self.analysistable.setItem(cluster_label+3, 4, QtWidgets.QTableWidgetItem(str(round(energy,2))))
+            self.analysistable.setItem(cluster_label+3, 5, QtWidgets.QTableWidgetItem(str(round(energysave,2))+'%'))
+            self.analysistable.setItem(cluster_label+3, 6, QtWidgets.QTableWidgetItem('TODO'))
+            self.analysistable.setItem(cluster_label+3, 7, QtWidgets.QTableWidgetItem('TODO'))
+            self.analysistable.setItem(cluster_label+3, 8, QtWidgets.QTableWidgetItem(str(round(science*100,2))))
+            self.analysistable.setItem(cluster_label+3, 9, QtWidgets.QTableWidgetItem(str(round(sciencegain,2))+'%'))
+            self.analysistable.setItem(cluster_label+3, 10, QtWidgets.QTableWidgetItem(str(len(cluster_points))))
+            self.analysistable.setItem(cluster_label+3, 11, QtWidgets.QTableWidgetItem(str(round(np.average(cluster_variance),2))))
+            self.analysistable.resizeColumnsToContents()
+
+        # Plot all paths in map
         self.plot_layer_with_paths()
 
 
@@ -221,14 +250,17 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
     def plot_layer_with_paths(self):
         '''Plots the current selected layer (self.current_map) and if applicable also the path'''
         self.mapwidget.plot_layer_global(self.current_map)
-        for path, color in zip(self.current_paths, self.colors):
-            self.mapwidget.plot_path_on_canvas(path, color)
-        # plot paths
+        linestyles = [(0,(3,0)),(0,(3,1)),(0,(3,2)),(0,(2,2)),(0,(1,1)),
+                      (0,(1,2)),(1,(1,2)),(0,(1,3)),(1,(1,3)),(2,(1,3)),
+                      (0,(1,3))]
+
+        for path, color, linestyle in zip(self.current_paths, self.colors, linestyles):
+            self.mapwidget.plot_path_on_canvas(path, color, linestyle)
 
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    my_main_window = MyQtMainWindow("src/user_interface/ui/MainWindow.ui")
+    my_main_window = MyQtMainWindow("src/user_interface/ui/PathAnalysis.ui")
     my_main_window.show()
     sys.exit(app.exec_())
 

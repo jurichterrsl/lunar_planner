@@ -151,7 +151,7 @@ class MapWidget(QtWidgets.QWidget):
         self.canvas.draw()
         
 
-    def plot_path_on_canvas(self, path, color):
+    def plot_path_on_canvas(self, path, color, linestyle='solid'):
         '''
         Plots path on whichever picture was shown before
             Parameters:
@@ -161,7 +161,7 @@ class MapWidget(QtWidgets.QWidget):
         if isinstance(path, list):
             path = np.array(path)
         if path.shape[0]>0:
-            self.axis.plot(path[:,0], path[:,1], color=color, linewidth=3)
+            self.axis.plot(path[:,0], path[:,1], color=color, linewidth=3, linestyle=linestyle)
         self.canvas.draw()
 
 
