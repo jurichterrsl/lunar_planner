@@ -37,10 +37,10 @@ def analyse_geotiff_1band(path_to_tif):
     latmin = latref - height/2 * 180/math.pi /radius
     latmax = latref + height/2 * 180/math.pi /radius
 
-    print("Extent Lon - min: {}, max: {} ".format(lonmin, lonmax))
+    print("Extent Lon - min: {}, max: {} ".format(360+lonmin, 360+lonmax))
     print("Extent Lat - min: {}, max: {} ".format(latmin, latmax))
 
-    band = dataset.read(1)
+    band = dataset.read(2)
     print(band)
     print("Band Type= "+band.dtype.name)
     min = np.nanmin(band)
@@ -73,5 +73,5 @@ def analyse_geotiff_pic(path_to_tif):
 
 
 if __name__ == "__main__":
-    path = "Aristarchus_IMP/"
-    analyse_geotiff_1band(path+"height_slope_rockabundance.tif")
+    path = "src/mapdata/Herodutus_Mons/"
+    analyse_geotiff_1band(path+"clino_feo_tio_plagio.tif")

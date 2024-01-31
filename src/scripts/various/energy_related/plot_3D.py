@@ -130,6 +130,7 @@ print("Crash max: ", crash_max)
 # print("Example value that should be positive: ", a + b*s + c*r + d*s**2 + e*s*r + f*r**2)
 
 R_max = (1-(1-crash_max))
+R_max = (-0.0288 + 0.0005310*15 + 0.3194*0.15 + 0.0003137*15**2 + -0.02298*15*0.15 + 10.8*0.15**2)/100
 print("R_max: ", R_max)
 R = 1/R_max * (1-(1-crash))
 

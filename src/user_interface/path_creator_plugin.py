@@ -5,7 +5,7 @@ import numpy as np
 import os
 from python_qt_binding import loadUi
 from PyQt5 import QtWidgets
-from mapdata.setup_aristarchus import Setup
+from mapdata.setup_aristarchus_imp import Setup
 from globalplanner import transform, astar
 from user_interface.map_widget import MapWidget
 from itertools import product
@@ -155,6 +155,7 @@ class PathCreatorPlugin(QtWidgets.QWidget):
         string_input = self.outputfolder.text()
         project_name = string_input.replace(" ", "")
         output_folder = 'user_data/path_storage/'+project_name
+        print("The chosen waypoints are: ", self.waypoints)
         if os.path.exists(output_folder):
             self.erroroutput.setStyleSheet("color: red;")
             self.erroroutput.setText("Foldername already exists in path '/user_data/path_storage'. Please choose different name.")
@@ -179,12 +180,11 @@ class PathCreatorPlugin(QtWidgets.QWidget):
             self.successmsg.setWordWrap(True)
 
 
-
     def create_paths(self, scale, start_global, goal_global, folder_name, segmentindex, num_segments):
         '''This function first creates a distribtion between the three path optimization weights and
         thereafter calculates paths for each combination'''
         # Iterate over different combinations of a, b, and c
-        scale = 10
+        scale = 3
         a_values = np.logspace(0, 1, scale)
         b_values = np.logspace(0, 1, scale)
         c_values = np.logspace(0, 1, scale)
@@ -243,7 +243,7 @@ class PathCreatorPlugin(QtWidgets.QWidget):
                             writer.writerow(header + coordinates)
         end_time = time.time()
         elapsed_time = end_time - start_time
-        print('The calculation took: '+str(elapsed_time/60)+' Minutes.')
+        print('The calculation of all paths for segment '+str(segmentindex)+' took: '+str(elapsed_time/60)+' Minutes.')
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here

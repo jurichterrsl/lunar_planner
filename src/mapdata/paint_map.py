@@ -86,17 +86,19 @@ class Paint():
     def __save_mask(self):
         '''Save the file as a numpy array'''
         # Save the file, open via PIL and convert to a numpy array
-        self.canvas.postscript(file=self.path+'data/temp_image_save.eps', colormode='color')
-        image = Image.open(self.path+'data/temp_image_save.eps')
+        self.canvas.postscript(file=self.path+'temp_image_save.eps', colormode='color')
+        image = Image.open(self.path+'temp_image_save.eps')
 
-        save_sizes = [(2048, 2048), (1024, 1024), (512, 512), (256, 256), (128, 128), (64, 64)]
-        sizes_string = ['2048', '1024', '512', '256', '128', '64']
+        # save_sizes = [(2048, 2048), (1024, 1024), (512, 512), (256, 256), (128, 128), (64, 64)]
+        # sizes_string = ['2048', '1024', '512', '256', '128', '64']
+        save_sizes = [(self.pixel_height, self.pixel_width)]
+        sizes_string = ['']
         for i in range(len(save_sizes)):
             array = np.array(image.resize(save_sizes[i]))
             binary_mask = np.all(array == [255, 0, 0], axis=2).astype(np.uint8)
-            np.save(self.path+"data/binary_map_"+self.new_layer_name+sizes_string[i], binary_mask)
+            np.save(self.path+"binary_map_"+self.new_layer_name+sizes_string[i], binary_mask)
 
-        print("The mask was successfully saved as 'data/binary_map_"+self.new_layer_name+".npy'")
+        print("The mask was successfully saved as 'binary_map_"+self.new_layer_name+".npy'")
 
         # Cleanly close Tkinter
         self.bg_image = None
@@ -138,23 +140,17 @@ class Paint():
         else:
             subtract_image = np.load(self.path+path+'/'+name_subtract+'.npy')
 
-        # # Apply the Gaussian filter to the binary image
-        # #washed_out_image = gaussian_filter(binary_image.astype(float), sigma=sigma_kernel)
-        # washed_out_image = cv2.medianBlur(binary_image, sigma_kernel)
-        # # Normalize the image to the range [0, 1]
-        # washed_out_image = (washed_out_image - np.min(washed_out_image)) / \
-        #     (np.max(washed_out_image) - np.min(washed_out_image))
-
         # Find the coordinates of 1s in the binary image
-        rows, _ = binary_image.shape
-        larger_rows = rows + 2*blur_size
-        larger_array = np.zeros((larger_rows, larger_rows))
+        rows, cols = binary_image.shape
+        larger_rows = rows + 2 * blur_size
+        larger_cols = cols + 2 * blur_size
+        larger_array = np.zeros((larger_rows, larger_cols))
         start_x = (larger_rows - rows) // 2
-        start_y = (larger_rows - rows) // 2
-        larger_array[start_x:start_x + rows, start_y:start_y + rows] = binary_image
+        start_y = (larger_cols - cols) // 2
+        larger_array[start_x:start_x + rows, start_y:start_y + cols] = binary_image
 
         coordinates = np.argwhere(larger_array == 1)
-        washed_out_image_large = np.zeros((larger_rows, larger_rows), dtype=np.float32)
+        washed_out_image_large = np.zeros((larger_rows, larger_cols), dtype=np.float32)
         
         kernel_size = int(2*blur_size+1)
         img=np.zeros((kernel_size,kernel_size))
@@ -173,7 +169,7 @@ class Paint():
             washed_out_image_large[x_min:x_max, y_min:y_max] = \
                 np.maximum(washed_out_image_large[x_min:x_max, y_min:y_max], kernel)
 
-        washed_out_image = washed_out_image_large[start_x:start_x + rows, start_y:start_y + rows]
+        washed_out_image = washed_out_image_large[start_x:start_x + rows, start_y:start_y + cols]
         #washed_out_image = washed_out_image/np.max(washed_out_image)
 
         # Add original mask on top of image
@@ -193,8 +189,8 @@ class Paint():
         washed_out_image[subtract_image==1] = 0
 
         # Save to workfolder
-        np.save(self.path+path+'/'+name_image+'_blurred.npy', washed_out_image)
-        print("Image saved as '"+self.path+path+"/"+name_image+"_blurred.npy'.")
+        np.save(self.path+path+name_image+'_blurred.npy', washed_out_image)
+        print("Image saved as '"+self.path+path+name_image+"_blurred.npy'.")
 
         # Show final image
         fig = plt.figure()
@@ -208,6 +204,6 @@ class Paint():
 
 ### Examples of working with this class
 if __name__ == "__main__":
-    painter = Paint((512, 512), "Aristarchus_IMP/")
-    painter.draw_mask_and_save_to_file('banned',"pic.png",1)
-    # painter.blur_binary_mask("data/Aristarchus_IMP","highlights", 0, 13)
+    painter = Paint((256, 237), "src/mapdata/Aristarchus_IMP/")
+    # painter.draw_mask_and_save_to_file('science',"pic.png",7)
+    painter.blur_binary_mask("","science", 0, 13)

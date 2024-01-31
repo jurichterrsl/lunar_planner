@@ -41,7 +41,10 @@ class Setup:
 
         distance_max = math.sqrt(2) * abs(self.maps.pixel_size)
         self.E_max = self.E(30,0.3,distance_max)
-        self.R_max = 1#self.R(-30,0.3,distance_max)
+        crash_half = (-0.0288 + 0.0005310*15 + 0.3194*0.15 + 0.0003137*15**2 + -0.02298*15*0.15 + 10.8*0.15**2)/100
+        print(crash_half)
+        self.R_max = self.R(-30,0.3,distance_max) / (1-(1-crash_half)**(distance_max/8))
+        print(self.R(-30,0.3,distance_max))
         self.E_min = 0.3922
         
 
@@ -51,7 +54,7 @@ class Setup:
         self.map_size_in_pixel = (256, 256)
         n_layers = 5
         self.costcomponents = 4 #E_P, R_P, I_P, B_P
-        self.energyreserve = 73060 #Nm^2
+        self.energyreserve = np.inf #Nm^2
 
         # Create Maps object with first tif file
         self.maps = maps.Maps(self.map_size_in_pixel, n_layers,
@@ -140,13 +143,13 @@ class Setup:
     def R(self, s, r, distance):
         '''single risk value'''
         # run script 'plot_3D.py' to get coefficients
-        # crash = (0.0005310*s + 0.3194*r + 0.0003137*s**2 + -0.02298*s*r + 10.8*r**2)/100
-        # print(crash)
-        # if crash<0:
-        #     crash=0
-        # return 1-(1-crash)**(distance/8)
+        crash = (-0.0288 + 0.0005310*s + 0.3194*r + 0.0003137*s**2 + -0.02298*s*r + 10.8*r**2)/100
+        print(crash)
+        if crash<0:
+            crash=0
+        return 1-(1-crash)**(distance/8)
         # Use linear dependence instead with maximum (1) at 30 deg
-        return abs(s)/30
+        # return abs(s)/30
 
 
     def getdistance(self, node1, node2):

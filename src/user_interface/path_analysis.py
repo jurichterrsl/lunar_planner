@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets
 from python_qt_binding import loadUi
 from user_interface.map_widget import MapWidget
 from user_interface.cluster_widget import ClusterWidget
-from mapdata import setup_aristarchus as setup_file
+from mapdata import setup_aristarchus_imp as setup_file
 import numpy as np
 from scipy.spatial.distance import cdist
 from sklearn.cluster import KMeans
@@ -154,7 +154,7 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
         self.colors.append('r')
 
         energy_base = data[average_point_index,4] * 345 * 3.255 / 1000
-        # risk = 1 - (1-results[1]*(1-(1-0.01512)**(3.255/8)))**(8/3.255) TODO
+        risk_base = 1 - (1-data[average_point_index,5]*(1-(1-0.01512)**(3.255/8)))**(8/3.255)
         science_base = 1 - data[average_point_index,6]/path_globe_baseline.shape[0]
 
         self.analysistable.item(2,0).setBackground(QBrush(QColor(255, 0, 0, 80)))
@@ -162,11 +162,8 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
         self.analysistable.setItem(2, 2, QtWidgets.QTableWidgetItem(str(round(data[average_point_index,2],4))))
         self.analysistable.setItem(2, 3, QtWidgets.QTableWidgetItem(str(round(data[average_point_index,3],4))))
         self.analysistable.setItem(2, 4, QtWidgets.QTableWidgetItem(str(round(energy_base,2))))
-        self.analysistable.setItem(2, 5, QtWidgets.QTableWidgetItem('0.0%'))
-        self.analysistable.setItem(2, 6, QtWidgets.QTableWidgetItem('TODO'))
-        self.analysistable.setItem(2, 7, QtWidgets.QTableWidgetItem('0.0%'))
+        self.analysistable.setItem(2, 6, QtWidgets.QTableWidgetItem(str(round(risk_base*100,2))))
         self.analysistable.setItem(2, 8, QtWidgets.QTableWidgetItem(str(round(science_base*100,2))))
-        self.analysistable.setItem(2, 9, QtWidgets.QTableWidgetItem('0.0%'))
 
         # Create data for comparison table
         for cluster_label, center in enumerate(cluster_centers):
@@ -195,9 +192,13 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
 
             # Data for comparison table            
             energy = data[closest_point_index,4] * 345 * 3.255 / 1000
-            # risk = 1 - (1-results[1]*(1-(1-0.01512)**(3.255/8)))**(8/3.255) TODO
+            risk = 1 - (1-data[closest_point_index,5]*(1-(1-0.01512)**(3.255/8)))**(8/3.255)
             science = 1 - data[closest_point_index,6]/path_globe.shape[0]
             energysave = (energy-energy_base)/energy_base * 100
+            if risk_base == 0:
+                risksave = risk * 100
+            else:
+                risksave = (risk-risk_base)/risk_base * 100
             sciencegain = (science-science_base)/science_base * 100
             # energysave = (data[closest_point_index,4] - data[average_point_index,4]) / data[average_point_index,5] * 100
             # risksave = (data[closest_point_index,5] - data[average_point_index,5]) / data[average_point_index,5] * 100
@@ -210,8 +211,8 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
             self.analysistable.setItem(cluster_label+3, 3, QtWidgets.QTableWidgetItem(str(round(data[closest_point_index,3],4))))
             self.analysistable.setItem(cluster_label+3, 4, QtWidgets.QTableWidgetItem(str(round(energy,2))))
             self.analysistable.setItem(cluster_label+3, 5, QtWidgets.QTableWidgetItem(str(round(energysave,2))+'%'))
-            self.analysistable.setItem(cluster_label+3, 6, QtWidgets.QTableWidgetItem('TODO'))
-            self.analysistable.setItem(cluster_label+3, 7, QtWidgets.QTableWidgetItem('TODO'))
+            self.analysistable.setItem(cluster_label+3, 6, QtWidgets.QTableWidgetItem(str(round(risk*100,2))))
+            self.analysistable.setItem(cluster_label+3, 7, QtWidgets.QTableWidgetItem(str(round(risksave,2))+'%'))
             self.analysistable.setItem(cluster_label+3, 8, QtWidgets.QTableWidgetItem(str(round(science*100,2))))
             self.analysistable.setItem(cluster_label+3, 9, QtWidgets.QTableWidgetItem(str(round(sciencegain,2))+'%'))
             self.analysistable.setItem(cluster_label+3, 10, QtWidgets.QTableWidgetItem(str(len(cluster_points))))

@@ -12,6 +12,8 @@ from matplotlib import ticker, colors
 import globalplanner.transform as transform
 import rasterio as rs
 import math
+from scipy.ndimage import convolve
+
 
 
 class Maps:
@@ -26,7 +28,7 @@ class Maps:
     #     ("", ["darkslategray","mediumturquoise",'#c9a687','#a6611a'])
     DEFAULT_CMAP = 'viridis'
     
-    def __init__(self, map_size, n_layers, init_filename, map_picture, layer_description, plot_global=True, plot_pixel=False):
+    def __init__(self, map_size, n_layers, init_filename, map_picture, layer_description, plot_global=True, plot_pixel=False, add_filter_for_heightmap=False):
         ''' 
         Initialize object map
             Parameters:
@@ -63,7 +65,7 @@ class Maps:
         self.maps_array = np.zeros((self.n_px_width, self.n_px_height, self.n_layers))
 
         # append the first geotif to array
-        self.extract_geotiff_and_add_to_array(init_filename, layer_description)
+        self.extract_geotiff_and_add_to_array(init_filename, layer_description, add_filter_for_heightmap)
 
         # load image if image is available
         if map_picture!="":
@@ -112,7 +114,7 @@ class Maps:
         return lonmin, latmin, lonmax, latmax, width, height
 
 
-    def extract_geotiff_and_add_to_array(self, filename, description):
+    def extract_geotiff_and_add_to_array(self, filename, description, add_filter_for_heightmap=False):
         '''
         Extracts one or several geotiff layers from a file and adds them as one or \
         respectively several rows into the array
@@ -157,8 +159,16 @@ class Maps:
             for band in range(dataset.count):
                 raster_band = dataset.read(band+1)
                 self.layer_names.append(description[band])
-                self.maps_array[:, :, band+n_layers_inscribed] = \
-                    np.transpose(np.array(raster_band))
+                if add_filter_for_heightmap and band==0:
+                    # Add kernel to average over heightmap and smooth out irregularities
+                    kernel = np.ones((9, 9), dtype=np.float32)
+                    kernel /= np.sum(kernel)
+                    smoothed_dem = convolve(np.array(raster_band), kernel, mode='nearest')
+                    self.maps_array[:, :, band+n_layers_inscribed] = \
+                        np.transpose(smoothed_dem)
+                else:
+                    self.maps_array[:, :, band+n_layers_inscribed] = \
+                        np.transpose(np.array(raster_band))
         
 
     def load_npy_file_and_add_to_array(self, filename, description):
@@ -188,6 +198,56 @@ class Maps:
         self.maps_array[:, :, n_layers_inscribed] = np.transpose(loaded_arr)
 
 
+    def extract_geotiff_science(self, filename):
+        '''
+        Extracts one or several geotiff layers from a file and adds them as one or \
+        respectively several rows into the array
+            Parameters:
+                filename (String): path to geotif file
+        '''
+        # load geotiff file
+        dataset = rs.open(filename)
+
+        # check how many layers are already in the array:
+        n_layers_inscribed = len(self.layer_names)
+        # check if user tries to input too many layers
+        if n_layers_inscribed >= self.n_layers:
+            print("ERROR: The maps_array has "+str(self.n_layers)+" layers, where each of them is \
+                  already filled.")
+            sys.exit()
+
+        # Add Clinopyroxene
+        raster_band = dataset.read(1)
+        science = np.interp(raster_band, (0, 50), (0, 1))
+        # fig, axs = plt.subplots(4)
+        # axs[0].imshow(science, extent=self.extent, aspect = self.aspect_ratio)
+
+        # Add FeO
+        raster_band = dataset.read(2)
+        science = science + np.interp(raster_band, (0, 25), (0, 1))
+        # axs[1].imshow(science, extent=self.extent, aspect = self.aspect_ratio)
+
+        # Add TiO2
+        raster_band = dataset.read(3)
+        science = science + np.interp(raster_band, (2, 10), (0, 1))
+        # axs[2].imshow(science, extent=self.extent, aspect = self.aspect_ratio)
+
+        # Add Plagioclase
+        raster_band = dataset.read(4)
+        science = science + np.interp(raster_band, (50, 100), (0, 1))
+        # axs[3].imshow(science, extent=self.extent, aspect = self.aspect_ratio)
+
+        # Add to array
+        # plt.show()
+        self.layer_names.append("Combinies science value")
+        science_scaled = np.interp(science, (science.min(), science.max()), (0, 1))
+        kernel = np.ones((4, 4), dtype=np.float32)
+        kernel /= np.sum(kernel)
+        science_smoothed = convolve(science_scaled, kernel, mode='nearest')
+        science_smoothed[science_smoothed<0.4] = 0
+        self.maps_array[:, :, n_layers_inscribed] = np.transpose(science_smoothed)
+
+
     def get_slope_from_height(self, heightmap):
         '''
         Returns the maximal slope between one pixel and its 8 neighboring pixel 
@@ -197,10 +257,54 @@ class Maps:
             Return:
                 slopemap (ndarray): 2D array with same size as input size
         '''
-        distance = np.sqrt((np.gradient(heightmap, axis=0)/10) ** 2 + (np.gradient(heightmap, axis=1)/10) ** 2)
-        slopemap = np.degrees(np.arctan(distance))
+        # distance = np.sqrt((np.gradient(heightmap, axis=0)/25) ** 2 + (np.gradient(heightmap, axis=1)/25) ** 2)
+        # slopemap = np.degrees(np.arctan(distance))
+
+        for i in range(heightmap.shape[0]):
+            for j in range(heightmap.shape[1]):
+                slopes = []
+                for neighbor in self.get_neighbors((i,j)):
+                    slope = np.sqrt((heightmap[i,j]-heightmap[neighbor])**2 + ()**2)
+
 
         return slopemap
+
+
+    def get_neighbors(self, node):
+        '''
+        Gets all neighbors of a node
+            Parameters:
+                node ((int, int)): x,y pixels of node
+                map_size ((int, int)): row,colums size of map
+                allow_diagonal (Boolean): true checks all 8 neighboring pixels while false only checks 4
+            Returns:
+                (int,int)[]: Tupellist of all neighbors
+        '''
+        x, y = node
+        cols, rows = self.maps_array.shape()
+        neighbors = []
+
+        # Add adjacent cells as neighbors
+        if x > 0:
+            neighbors.append((x - 1, y))
+        if x < cols - 1:
+            neighbors.append((x + 1, y))
+        if y > 0:
+            neighbors.append((x, y - 1))
+        if y < rows - 1:
+            neighbors.append((x, y + 1))
+
+        # Add diagonal cells as neighbors
+        if x > 0 and y > 0:
+            neighbors.append((x - 1, y - 1))
+        if x > 0 and y < rows - 1:
+            neighbors.append((x - 1, y + 1))
+        if x < cols - 1 and y > 0:
+            neighbors.append((x + 1, y - 1))
+        if x < cols - 1 and y < rows - 1:
+            neighbors.append((x + 1, y + 1))
+
+        return neighbors
 
 
     def plot_layers(self, layers, is_height_map, colormap='viridis'):
