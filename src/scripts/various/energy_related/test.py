@@ -4,14 +4,12 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import ticker, colors
 
-x = np.linspace(0,0.3,100)
-y = x**2
-plt.plot(x,y/(np.max(y)), c='r')
+# x = np.linspace(0,0.3,100)
+# y = x**2
+# plt.plot(x,y/(np.max(y)), c='r')
 
-y2 = y * (-1/0.5*np.abs(x)+1)
-plt.plot(x,y2/(np.max(y2)), c='b')
-
-
+# y2 = y * (-1/0.5*np.abs(x)+1)
+# plt.plot(x,y2/(np.max(y2)), c='b')
 
 # Define the range of values for s and t
 s = np.linspace(-30, 30, 1000)
@@ -62,7 +60,7 @@ f=10.80
 crash = a + b*S + c*T + d*S**2 + e*S*T + f*T**2
 r_max = 0.3
 s_max = -30
-R = 1-(1-crash*enhance)**(3.25/8)
+R = crash / 0.2684471999920412
 
 # R_max = (1-(1-crash_max))
 # R_max = (-0.0288 + 0.0005310*15 + 0.3194*0.15 + 0.0003137*15**2 + -0.02298*15*0.15 + 10.8*0.15**2)/100
@@ -83,6 +81,6 @@ ax = fig.add_subplot(133, projection='3d')
 ax.set_xlim(-30, 30)
 ax.set_ylim(0, 0.3)
 ax.set_zlim(0, 1)
-ax.plot_surface(S, T, R/np.max(R), cmap='viridis')
+ax.plot_surface(S, T, R, cmap='viridis')
 
 plt.show()

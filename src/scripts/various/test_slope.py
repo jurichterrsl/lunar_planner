@@ -14,13 +14,13 @@ def get_slope_from_height(heightmap):
     slopemap = np.zeros(heightmap.shape)
     for i in range(heightmap.shape[0]):
         for j in range(heightmap.shape[1]):
-            print('')
             slopes = []
-            for neighbor in get_neighbors((i,j)):
-                slope = np.degrees(np.arctan((heightmap[neighbor]-heightmap[i,j])/(3)))
+            for n, neighbor in enumerate(get_neighbors((i,j))):
+                if n<4:
+                    slope = np.degrees(np.arctan((heightmap[neighbor]-heightmap[i,j])/(3)))
+                else:
+                    slope = np.degrees(np.arctan((heightmap[neighbor]-heightmap[i,j])/(np.sqrt(2)*3)))
                 slopes.append(slope)
-            print(slopes)
-            print(np.max(slopes))
             slopemap[i, j] = max(slopes, key=lambda x: abs(x))
 
     return slopemap
@@ -62,6 +62,9 @@ def get_neighbors(node):
 
     return neighbors
 
-arr = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+
+arr = np.array([[1, 1, 1],
+                [1, 1, 4],
+                [1, 1, 1]])
 slope_map = get_slope_from_height(arr)
-print(arr)
+print(slope_map)

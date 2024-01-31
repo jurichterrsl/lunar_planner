@@ -1,15 +1,15 @@
 
 from globalplanner import astar, transform
-from mapdata import setup_aristarchus_imp as setup_file
+from mapdata import setup_aristarchus_cp as setup_file
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 # Load setup file
-setup = setup_file.Setup('src/mapdata/', 0.1, 0.0, 0.9, plot_global=True)
+setup = setup_file.Setup('src/mapdata/', 1, 0.0, 0.0, plot_global=True)
 # setup.maps.plot_four_layers_in_pixel([])
-setup.maps.plot_layers([3],[False])
-# setup.maps.show_image()
+setup.maps.plot_layers([0,1,2],[True,False,False])
+setup.maps.show_image()
 
 # # Define start and goal manually
 # start = (-46.75458, 25.03874) #(longitude, latitude)

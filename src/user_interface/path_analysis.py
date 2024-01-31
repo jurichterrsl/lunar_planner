@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets
 from python_qt_binding import loadUi
 from user_interface.map_widget import MapWidget
 from user_interface.cluster_widget import ClusterWidget
-from mapdata import setup_aristarchus_imp as setup_file
+from mapdata import setup_aristarchus_hm as setup_file
 import numpy as np
 from scipy.spatial.distance import cdist
 from sklearn.cluster import KMeans

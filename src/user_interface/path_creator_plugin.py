@@ -5,7 +5,7 @@ import numpy as np
 import os
 from python_qt_binding import loadUi
 from PyQt5 import QtWidgets
-from mapdata.setup_aristarchus_imp import Setup
+from mapdata.setup_aristarchus_hm import Setup
 from globalplanner import transform, astar
 from user_interface.map_widget import MapWidget
 from itertools import product

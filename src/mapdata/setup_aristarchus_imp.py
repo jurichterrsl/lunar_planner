@@ -4,6 +4,7 @@ from globalplanner import maps
 import math
 import numpy as np
 
+
 class Setup:
     """
     A class to create and change the map.
@@ -20,7 +21,6 @@ class Setup:
     s_max = 30
     r_max = 0.3
     PLOT_GLOBAL = True
-    R_max = None
 
 
     def __init__(self, path_to_root, a, b, c, plot_global):
@@ -39,11 +39,42 @@ class Setup:
         self.path_to_root = path_to_root
         self.create_map()
 
+        # Define constants for h and g function
+
+        # Get map of maximal slope
+        max_slope_map = self.maps.get_slope_from_height(self.maps.maps_array[:,:,0])
+        max_slope_map[max_slope_map>self.s_max]=self.s_max
+        max_slope_map[max_slope_map<-self.s_max]=-self.s_max
+        # Get map of maximal energy consumption
         distance_max = math.sqrt(2) * abs(self.maps.pixel_size)
-        self.E_max = self.E(30,0.3,distance_max)
-        crash_half = (-0.0288 + 0.0005310*15 + 0.3194*0.15 + 0.0003137*15**2 + -0.02298*15*0.15 + 10.8*0.15**2)/100
-        self.R_max = self.R(-30,0.3,distance_max) / (1-(1-crash_half)**(distance_max/8))
-        self.E_min = 0.3922
+        E_map_max = self.E(max_slope_map, self.maps.maps_array[:,:,2], distance_max)
+        # Get map of maximal risk (manually bc R function with if statement does not support array)
+        R_map_max = -0.0288 + 0.0005310*max_slope_map + 0.3194*self.maps.maps_array[:,:,2] \
+            + 0.0003137*max_slope_map**2 + -0.02298*max_slope_map*self.maps.maps_array[:,:,2] \
+                + 10.8*self.maps.maps_array[:,:,2]**2
+        R_map_max[R_map_max<0]=0
+        # Get maximal values
+        self.Emax = np.max(E_map_max)
+        self.Rmax = np.max(R_map_max)
+
+        # Get map of minimal slope
+        min_slope_map = self.maps.get_slope_from_height(self.maps.maps_array[:,:,0], get_min_slope=True)
+        min_slope_map[min_slope_map>self.s_max]=self.s_max
+        min_slope_map[min_slope_map<-self.s_max]=-self.s_max
+        # Get map of minimal energy consumption
+        distance_min = abs(self.maps.pixel_size)
+        E_map_min = self.E(min_slope_map, self.maps.maps_array[:,:,2], distance_min)
+        # Get map of minimal risk (manually bc R function with if statement does not support array)
+        R_map_min = -0.0288 + 0.0005310*min_slope_map + 0.3194*self.maps.maps_array[:,:,2] \
+            + 0.0003137*min_slope_map**2 + -0.02298*min_slope_map*self.maps.maps_array[:,:,2] \
+                + 10.8*self.maps.maps_array[:,:,2]**2
+        R_map_min[R_map_min<0]=0
+        # Get minimal values
+        self.Emin = np.min(E_map_min)
+        self.Rmin = np.min(R_map_min)
+
+        print(self.Emax, self.Emin)
+        print(self.Rmax, self.Rmin)
         
 
     def create_map(self):
@@ -76,7 +107,7 @@ class Setup:
         self.maps.maps_array[:,:,4] = banned
         self.maps.layer_names.append("Banned")
 
-    
+
     def h_func(self, node, goal):
         '''
         Define the heuristic function h(x, y)
@@ -87,7 +118,9 @@ class Setup:
                 Float: heuristic value
         '''
         # E_min is minimum of normalized curve for 8m field
-        return self.ALPHA * self.E_min * self.getdistance(node, goal)/8
+        x1, y1 = node
+        x2, y2 = goal
+        return self.ALPHA * math.sqrt((x2-x1)**2 + (y2-y1)**2) 
 
 
     def g_func(self, current, previous):
@@ -105,12 +138,12 @@ class Setup:
         x, y = current
         x0, y0 = previous
         distance = self.getdistance(current, previous)
-        s = math.degrees(math.atan((maps[x,y,0]-maps[x0,y0,0]) / (distance*abs(self.maps.pixel_size))))
+        s = math.degrees(math.atan((maps[x,y,0]-maps[x0,y0,0]) / distance))
         t = maps[x,y,2]
 
         if (-30 <= s <= 30) and (t <= 0.3):
-            E_P = self.E(s,t,distance)/self.E_max
-            R_P = self.R(s,t,distance)/self.R_max
+            E_P = (self.E(s,t,distance)-self.Emin)/(self.Emax-self.Emin)
+            R_P = (self.R(s,t,distance)-self.Rmin)/(self.Rmax-self.Rmin)
         else:
             E_P = math.inf
             R_P = math.inf
@@ -139,14 +172,10 @@ class Setup:
     def R(self, s, r, distance):
         '''single risk value'''
         # run script 'plot_3D.py' to get coefficients
-        crash = (-0.0288 + 0.0005310*s + 0.3194*r + 0.0003137*s**2 + -0.02298*s*r + 10.8*r**2)/100
-        crash_enhanced = crash * (1 - 0.00011*s**2 - 4.44444*r**2)
-        if crash<0:
+        crash = -0.0288 + 0.0005310*s + 0.3194*r + 0.0003137*s**2 + -0.02298*s*r + 10.8*r**2
+        if crash <= 0:
             crash=0
-        # return 1-(1-crash_enhanced)**(distance/8)
-        return crash_enhanced
-        # Use linear dependence instead with maximum (1) at 30 deg
-        # return abs(s)/30
+        return crash
 
 
     def getdistance(self, node1, node2):

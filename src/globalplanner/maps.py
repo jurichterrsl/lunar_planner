@@ -248,7 +248,7 @@ class Maps:
         self.maps_array[:, :, n_layers_inscribed] = np.transpose(science_smoothed)
 
 
-    def get_slope_from_height(self, heightmap):
+    def get_slope_from_height(self, heightmap, get_min_slope=False):
         '''
         Returns the maximal slope between one pixel and its 8 neighboring pixel 
         numpy array
@@ -260,13 +260,20 @@ class Maps:
         # distance = np.sqrt((np.gradient(heightmap, axis=0)/25) ** 2 + (np.gradient(heightmap, axis=1)/25) ** 2)
         # slopemap = np.degrees(np.arctan(distance))
 
+        slopemap = np.zeros(heightmap.shape)
         for i in range(heightmap.shape[0]):
             for j in range(heightmap.shape[1]):
                 slopes = []
-                for neighbor in self.get_neighbors((i,j)):
-                    slope = np.sqrt((heightmap[i,j]-heightmap[neighbor])**2 + ()**2)
-
-
+                for k, neighbor in enumerate(self.get_neighbors((i,j))):
+                    if k<4:
+                        slope = np.degrees(np.arctan((heightmap[neighbor]-heightmap[i,j])/(self.pixel_size)))
+                    else:
+                        slope = np.degrees(np.arctan((heightmap[neighbor]-heightmap[i,j])/(np.sqrt(2)*self.pixel_size)))
+                    slopes.append(slope)
+                if get_min_slope:
+                    slopemap[i, j] = min(slopes, key=lambda x: abs(x))
+                else:
+                    slopemap[i, j] = max(slopes, key=lambda x: abs(x))
         return slopemap
 
 
@@ -281,7 +288,7 @@ class Maps:
                 (int,int)[]: Tupellist of all neighbors
         '''
         x, y = node
-        cols, rows = self.maps_array.shape()
+        cols, rows = self.n_px_width, self.n_px_height
         neighbors = []
 
         # Add adjacent cells as neighbors
