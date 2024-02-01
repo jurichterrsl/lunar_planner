@@ -4,6 +4,7 @@ from globalplanner import maps
 import math
 import numpy as np
 
+
 class Setup:
     """
     A class to create and change the map.
@@ -20,7 +21,6 @@ class Setup:
     s_max = 30
     r_max = 0.3
     PLOT_GLOBAL = True
-    R_max = None
 
 
     def __init__(self, path_to_root, a, b, c, plot_global):
@@ -39,18 +39,57 @@ class Setup:
         self.path_to_root = path_to_root
         self.create_map()
 
+        # Define constants for h and g function
+
+        # Get map of maximal slope
+        max_slope_map = self.maps.get_slope_from_height(self.maps.maps_array[:,:,0])
+        max_slope_map[max_slope_map>self.s_max]=self.s_max
+        max_slope_map[max_slope_map<-self.s_max]=-self.s_max
+        # Get map of maximal energy consumption
         distance_max = math.sqrt(2) * abs(self.maps.pixel_size)
-        self.E_max = self.E(30,0.3,distance_max)
-        crash_half = (-0.0288 + 0.0005310*15 + 0.3194*0.15 + 0.0003137*15**2 + -0.02298*15*0.15 + 10.8*0.15**2)/100
-        self.R_max = self.R(-30,0.3,distance_max) / (1-(1-crash_half)**(distance_max/8))
-        self.E_min = 0.3922
-        
+        E_map_max = self.E_star(max_slope_map, self.maps.maps_array[:,:,2], distance_max)
+        # Get map of maximal risk (manually bc R function with if statement does not support array)
+        crash_max_map = -0.0288 + 0.0005310*max_slope_map + \
+            0.3194*self.maps.maps_array[:,:,2] + 0.0003137*max_slope_map**2 + \
+                -0.02298*-max_slope_map*self.maps.maps_array[:,:,2] + 10.8*self.maps.maps_array[:,:,2]**2
+        self.crash_max = np.nanmax(crash_max_map)
+
+        R_map_max = np.zeros(max_slope_map.shape)
+        for i in range(max_slope_map.shape[0]):
+            for j in range(max_slope_map.shape[1]):
+                R_map_max[i,j] = self.R_star(max_slope_map[i,j], self.maps.maps_array[i,j,2], distance_max)
+        # Get maximal values
+        self.Emax = np.nanmax(E_map_max)
+        self.Rmax = np.nanmax(R_map_max)
+
+        # Get map of minimal slope
+        min_slope_map = self.maps.get_slope_from_height(self.maps.maps_array[:,:,0], get_min_slope=True)
+        min_slope_map[min_slope_map>self.s_max]=self.s_max
+        min_slope_map[min_slope_map<-self.s_max]=-self.s_max
+        # Get map of minimal energy consumption
+        distance_min = abs(self.maps.pixel_size)
+        E_map_min = self.E_star(min_slope_map, self.maps.maps_array[:,:,2], distance_min)
+        # Get map of minimal risk (manually bc R function with if statement does not support array)
+        R_map_min = np.zeros(min_slope_map.shape)
+        for i in range(1, min_slope_map.shape[0] - 1):
+            for j in range(1, min_slope_map.shape[1] - 1):
+                R_map_min[i,j] = self.R_star(min_slope_map[i,j], self.maps.maps_array[i,j,2], distance_min)
+        # Get minimal values
+        Emin = np.nanmin(E_map_min)/self.Emax
+        Rmin = np.nanmin(R_map_min)/self.Rmax
+        # Get minimal cost for heuristic
+        self.hmin = self.ALPHA * Emin + self.BETA * Rmin
+
+        print("Emin, Rmin: ", Emin, Rmin)
+        print("hmin: ", self.hmin)
+        print("Emax, Rmax: ", self.Emax, self.Rmax)
+
 
     def create_map(self):
         '''Define the map as an object of class Maps'''
         # Define static parameters of the map
         self.map_size_in_pixel = (226, 256)
-        n_layers = 3
+        n_layers = 5
         self.costcomponents = 4 #E_P, R_P, I_P, B_P
         self.energyreserve = np.inf #Nm^2
 
@@ -62,25 +101,32 @@ class Setup:
                                    plot_global=self.PLOT_GLOBAL,
                                    add_filter_for_heightmap=True)
         
-        # # Add further tif files if needed
         self.maps.maps_array[:,:,1] = self.maps.get_slope_from_height(self.maps.maps_array[:,:,0])
-        # self.maps.load_npy_file_and_add_to_array(self.path_to_root+'Aristarchus_CP/banned_blurred.npy',
-        #                                          'Scientific relevance')
-        # self.maps.load_npy_file_and_add_to_array(self.path_to_root+'Aristarchus_CP/banned.npy',
-        #                                          'Banned areas')
+        self.maps.maps_array[:,:,3] = np.zeros(self.map_size_in_pixel)
+        self.maps.maps_array[:,:,4] = np.zeros(self.map_size_in_pixel)
         
-        # Add steep and rocky areas to banned areas
+        # # Change height and slope so that slope is second and heigth first entry
+        # slope = np.copy(self.maps.maps_array[:,:,0])
+        # self.maps.maps_array[:,:,0] = self.maps.maps_array[:,:,1]
+        # self.maps.maps_array[:,:,1] = slope
+        
+        # # Add more layers
+        # self.maps.extract_geotiff_science(self.path_to_root+"Herodutus_Mons/clino_feo_tio_plagio.tif")
+        # self.maps.load_npy_file_and_add_to_array(self.path_to_root+'Herodutus_Mons/banned.npy',
+        #                                           'Banned areas')
+        
+        # # Add steep and rocky areas to banned areas
         # slope = self.maps.maps_array[:,:,1]
         # rockabundance = self.maps.maps_array[:,:,2]
         # # Load banned areas or set to zero
-        # # banned = self.maps.maps_array[:,:,4]\
-        # banned = np.zeros(self.map_size_in_pixel)
+        # banned = self.maps.maps_array[:,:,4]
         # banned[slope>30] = 1
         # banned[slope<-30] = 1
         # banned[rockabundance>0.3] = 1
         # self.maps.maps_array[:,:,4] = banned
+        # self.maps.layer_names.append("Banned")
 
-    
+
     def h_func(self, node, goal):
         '''
         Define the heuristic function h(x, y)
@@ -90,8 +136,9 @@ class Setup:
             Returns:
                 Float: heuristic value
         '''
-        # E_min is minimum of normalized curve for 8m field
-        return self.ALPHA * self.E_min * self.getdistance(node, goal)/8
+        x1, y1 = node
+        x2, y2 = goal
+        return self.hmin * math.sqrt((x2-x1)**2 + (y2-y1)**2)
 
 
     def g_func(self, current, previous):
@@ -109,23 +156,23 @@ class Setup:
         x, y = current
         x0, y0 = previous
         distance = self.getdistance(current, previous)
-        s = math.degrees(math.atan((maps[x,y,0]-maps[x0,y0,0]) / (distance*abs(self.maps.pixel_size))))
+        s = math.degrees(math.atan((maps[x,y,0]-maps[x0,y0,0]) / distance))
         t = maps[x,y,2]
 
         if (-30 <= s <= 30) and (t <= 0.3):
-            E_P = self.E(s,t,distance)/self.E_max
-            R_P = self.R(s,t,distance)/self.R_max
+            E = self.E_star(s,t,distance)/self.Emax
+            R = self.R_star(s,t,distance)/self.Rmax
         else:
-            E_P = math.inf
-            R_P = math.inf
-        I_P = 1-maps[x,y,3]
+            E = math.inf
+            R = math.inf
+        I = 1-maps[x,y,3]
         if maps[x,y,4]==1:
-            B_P = math.inf
+            B = math.inf
         else:
-            B_P = 0
+            B = 0
 
-        total = self.ALPHA * E_P + self.BETA * R_P + self.GAMMA * I_P
-        return E_P, R_P, I_P, B_P, total
+        total = self.ALPHA * E + self.BETA * R + self.GAMMA * I
+        return E, R, I, B, total
 
 
     def max_func(self, g_score):
@@ -134,21 +181,19 @@ class Setup:
             return True
 
 
-    def E(self, s, r, distance):
+    def E_star(self, s, r, distance):
         '''single energy efficient value'''
         # run script 'plot_3D.py' to get coefficients
         return (803.3 + 10.54*s + 70.25*r + 0.7386*s**2 + -1.420*s*r + 1773*r**2) * distance/8
 
 
-    def R(self, s, r, distance):
+    def R_star(self, s, r, distance):
         '''single risk value'''
         # run script 'plot_3D.py' to get coefficients
-        crash = (-0.0288 + 0.0005310*s + 0.3194*r + 0.0003137*s**2 + -0.02298*s*r + 10.8*r**2)/100
-        if crash<0:
+        crash = -0.0288 + 0.0005310*s + 0.3194*r + 0.0003137*s**2 + -0.02298*s*r + 10.8*r**2
+        if crash <= 0:
             crash=0
         return 1-(1-crash)**(distance/8)
-        # Use linear dependence instead with maximum (1) at 30 deg
-        # return abs(s)/30
 
 
     def getdistance(self, node1, node2):

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from itertools import product
-from mapdata.setup_aristarchus import Setup
+from mapdata.setup_aristarchus_hm import Setup
 from globalplanner import transform, astar
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import colors
@@ -113,7 +113,7 @@ def load_and_plot_paths(folder_path, show_in_one_plot=True, clustering_policy=Fa
     fig = plt.figure()
     for i, folder_path in enumerate(folder_path_list):
         # Load stats from the file
-        data = np.loadtxt(folder_path+'/stats.csv', skiprows=1)
+        data = np.loadtxt(folder_path+'stats.csv', skiprows=1)
 
         # Extract columns
         r = data[:, 1]
@@ -122,7 +122,7 @@ def load_and_plot_paths(folder_path, show_in_one_plot=True, clustering_policy=Fa
         E_P = data[:, 4]
         R_P = data[:, 5]
         I_P = data[:, 6]
-        n_pixel = data[:, 8]
+        n_pixel = data[:, 10]
 
         # Create a 3D plot
         if show_in_one_plot:
@@ -232,7 +232,7 @@ def load_and_plot_paths(folder_path, show_in_one_plot=True, clustering_policy=Fa
 
         # Loop through all paths and plot them
         max_pixel = int(np.max(n_pixel))
-        df = pd.read_csv(folder_path+'/paths.csv', delimiter='\t', names=list(range(max_pixel+1)))
+        df = pd.read_csv(folder_path+'paths.csv', delimiter='\t', names=list(range(max_pixel+1)))
         num_rows = int(df.shape[0]/2)
 
         for path_number in range(num_rows):
@@ -416,7 +416,7 @@ if __name__ == '__main__':
     # PLOT PATHS AND STATS
     # load_and_plot_paths('src/globalplanner/data/1000', show_in_one_plot=False)
     # load_and_plot_paths('src/globalplanner/data/1000_log', show_in_one_plot=True)
-    load_and_plot_paths('src/globalplanner/data/1000_new', show_in_one_plot=True,
+    load_and_plot_paths('user_data/path_storage/hm_direct/segment1_', show_in_one_plot=True,
                         clustering_policy=True, n_clusters=3)
 
     #load_and_resave_paths('src/globalplanner/data/1000_new')

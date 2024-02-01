@@ -506,12 +506,12 @@ class Maps:
                 else:
                     img = ax.imshow(plotting_array[:, :, i//2].T, cmap='viridis',
                                 extent=self.extent, aspect=self.aspect_ratio)
-                ax.set_xlabel("x [m]", fontsize=26)
-                ax.set_ylabel("y [m]", fontsize=26)
-                ax.tick_params(axis='both', which='major', labelsize=22)
+                ax.set_xlabel("x [m]")
+                ax.set_ylabel("y [m]")
+                ax.tick_params(axis='both', which='major')
                 cbar = plt.colorbar(img, ax=ax)
-                cbar.ax.set_ylabel(cbar_label[i//2], fontsize=22)
-                cbar.ax.tick_params(labelsize=22)
+                cbar.ax.set_ylabel(cbar_label[i//2])
+                # cbar.ax.tick_params()
 
                 # Add contour for height map
                 if i==0:
@@ -519,6 +519,9 @@ class Maps:
                                             linestyles='solid', linewidths=1, extent=self.extent)
                 # Add path
                 ax.plot(path[:,0], path[:,1], 'red', linewidth=3)
+                if isinstance(intermediate_goals, list):
+                    # If coordinates is a list of tuples
+                    intermediate_goals = transform.tupellist_to_array(intermediate_goals)
                 ax.plot(intermediate_goals[:,0], intermediate_goals[:,1], linestyle='none', marker='o', color='red', markersize=10)
             else:
                 # Calculate and output length
@@ -531,26 +534,26 @@ class Maps:
 
                 # Plot
                 ax.plot(scaled_x, plotting_array[path_pixel[:,0], path_pixel[:,1], i//2], linewidth=3)
-                ax.tick_params(axis='both', which='major', labelsize=22)
+                ax.tick_params(axis='both', which='major')
 
         # Add titles and axes
-        axs[0, 0].set_title('Height map',fontsize=26)
-        axs[0, 1].set_title('Height profile',fontsize=26)
-        axs[1, 0].set_title('Slope map',fontsize=26)
-        axs[1, 1].set_title('Slope profile',fontsize=26)
-        axs[2, 0].set_title('Traversability map',fontsize=26)
-        axs[2, 1].set_title('Traversability profile',fontsize=26)
-        axs[3, 0].set_title('Scientific interest map',fontsize=26)
-        axs[3, 1].set_title('Scientific interest profile',fontsize=26)
+        axs[0, 0].set_title('Height map')
+        axs[0, 1].set_title('Height profile')
+        axs[1, 0].set_title('Slope map')
+        axs[1, 1].set_title('Slope profile')
+        axs[2, 0].set_title('Traversability map')
+        axs[2, 1].set_title('Traversability profile')
+        axs[3, 0].set_title('Scientific interest map')
+        axs[3, 1].set_title('Scientific interest profile')
 
-        axs[0, 1].set_xlabel("Distance [m]", fontsize=26)
-        axs[0, 1].set_ylabel("Height [m]", fontsize=26)
-        axs[1, 1].set_xlabel("Distance [m]", fontsize=26)
-        axs[1, 1].set_ylabel("Slope [deg]", fontsize=26)
-        axs[2, 1].set_xlabel("Distance [m]", fontsize=26)
-        axs[2, 1].set_ylabel("Rock abundance", fontsize=26)
-        axs[3, 1].set_xlabel("Distance [m]", fontsize=26)
-        axs[3, 1].set_ylabel("Scientific value", fontsize=26)
+        axs[0, 1].set_xlabel("Distance [m]")
+        axs[0, 1].set_ylabel("Height [m]")
+        axs[1, 1].set_xlabel("Distance [m]")
+        axs[1, 1].set_ylabel("Slope [deg]")
+        axs[2, 1].set_xlabel("Distance [m]")
+        axs[2, 1].set_ylabel("Rock abundance")
+        axs[3, 1].set_xlabel("Distance [m]")
+        axs[3, 1].set_ylabel("Scientific value")
 
         plt.show()
 

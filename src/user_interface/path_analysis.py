@@ -42,10 +42,8 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
 
         # Initialize cluster widget
         self.clusterwidget = ClusterWidget()
-        self.toolbar = NavigationToolbar(self.clusterwidget.mpl_canvas, self)
-        layout_clusterwidget = QtWidgets.QVBoxLayout(self.analysisplot)
-        layout_clusterwidget.addWidget(self.clusterwidget)
-        layout_clusterwidget.addWidget(self.toolbar)
+        QtWidgets.QVBoxLayout(self.analysisplot).addWidget(self.clusterwidget)
+        # layout_clusterwidget = QtWidgets.QVBoxLayout(self.analysisplot)
         self.analysisplot.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         # Prepare table
@@ -123,19 +121,22 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
             self.analysistable.setItem(i+3, 0, QtWidgets.QTableWidgetItem('Path '+str(i+1)))
 
         # Extract columns
-        r = data[:, 1]
-        g = data[:, 2]
-        b = data[:, 3]
-        E_P = data[:, 4]
-        R_P = data[:, 5]
-        I_P = data[:, 6]
-        n_pixel = data[:, 8]
+        data_a = data[:, 1]
+        data_b = data[:, 2]
+        data_c = data[:, 3]
+        data_E_P = data[:, 4]
+        data_R_P = data[:, 5]
+        data_I_P = data[:, 6]
+        data_E_star = data[:, 7]
+        data_C = data[:, 8]
+        data_S = data[:, 9]
+        n_pixel = data[:, 10]
 
         # Calculate clusters
-        kmeans = KMeans(n_clusters=n_clusters, random_state=0, n_init='auto').fit(np.column_stack((E_P, R_P, I_P)))
+        kmeans = KMeans(n_clusters=n_clusters, random_state=0, n_init='auto').fit(np.column_stack((data_E_P, data_R_P, data_I_P)))
         labels = kmeans.labels_
         cluster_centers = kmeans.cluster_centers_
-        self.clusterwidget.plot(E_P, R_P, I_P, color=labels)
+        self.clusterwidget.plot(data_E_P, data_R_P, data_I_P, color=labels)
         closest_paths = []
         all_points = data[:, 4:7]
 
@@ -156,14 +157,14 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
         self.current_paths.append(path_globe_baseline)
         self.colors.append('r')
 
-        energy_base = data[average_point_index,4] * (self.setup.Emax-self.setup.Emin) + self.setup.Emin
-        risk_base = data[average_point_index,5] * (self.setup.Rmax-self.setup.Rmin) + self.setup.Rmin
-        science_base = 1 - data[average_point_index,6]/path_globe_baseline.shape[0]
+        energy_base = data_E_star[average_point_index]/1000
+        risk_base = data_C[average_point_index]
+        science_base = data_S[average_point_index]
 
         self.analysistable.item(2,0).setBackground(QBrush(QColor(255, 0, 0, 80)))
-        self.analysistable.setItem(2, 1, QtWidgets.QTableWidgetItem(str(round(data[average_point_index,1],4))))
-        self.analysistable.setItem(2, 2, QtWidgets.QTableWidgetItem(str(round(data[average_point_index,2],4))))
-        self.analysistable.setItem(2, 3, QtWidgets.QTableWidgetItem(str(round(data[average_point_index,3],4))))
+        self.analysistable.setItem(2, 1, QtWidgets.QTableWidgetItem(str(round(data_a[average_point_index],4))))
+        self.analysistable.setItem(2, 2, QtWidgets.QTableWidgetItem(str(round(data_b[average_point_index],4))))
+        self.analysistable.setItem(2, 3, QtWidgets.QTableWidgetItem(str(round(data_c[average_point_index],4))))
         self.analysistable.setItem(2, 4, QtWidgets.QTableWidgetItem(str(round(energy_base,2))))
         self.analysistable.setItem(2, 6, QtWidgets.QTableWidgetItem(str(round(risk_base*100,2))))
         self.analysistable.setItem(2, 8, QtWidgets.QTableWidgetItem(str(round(science_base*100,2))))
@@ -194,24 +195,21 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
             self.colors.append(color)
 
             # Data for comparison table
-            energy = data[closest_point_index,4] * (self.setup.Emax-self.setup.Emin) + self.setup.Emin
-            risk = data[closest_point_index,5] * (self.setup.Rmax-self.setup.Rmin) + self.setup.Rmin
-            science = 1 - data[closest_point_index,6]/path_globe.shape[0]
+            energy = data_E_star[closest_point_index]/1000
+            risk = data_C[closest_point_index]
+            science = data_S[closest_point_index]
             energysave = (energy-energy_base)/energy_base * 100
             if risk_base == 0:
                 risksave = risk * 100
             else:
                 risksave = (risk-risk_base)/risk_base * 100
             sciencegain = (science-science_base)/science_base * 100
-            # energysave = (data[closest_point_index,4] - data[average_point_index,4]) / data[average_point_index,5] * 100
-            # risksave = (data[closest_point_index,5] - data[average_point_index,5]) / data[average_point_index,5] * 100
-            # sciencegain = (data[average_point_index,6] - data[closest_point_index,6]) / data[average_point_index,6] * 100
 
             color = [int(i*255) for i in color]
             self.analysistable.item(cluster_label+3,0).setBackground(QBrush(QColor(*color[:3], 80)))
-            self.analysistable.setItem(cluster_label+3, 1, QtWidgets.QTableWidgetItem(str(round(data[closest_point_index,1],4))))
-            self.analysistable.setItem(cluster_label+3, 2, QtWidgets.QTableWidgetItem(str(round(data[closest_point_index,2],4))))
-            self.analysistable.setItem(cluster_label+3, 3, QtWidgets.QTableWidgetItem(str(round(data[closest_point_index,3],4))))
+            self.analysistable.setItem(cluster_label+3, 1, QtWidgets.QTableWidgetItem(str(round(data_a[closest_point_index],4))))
+            self.analysistable.setItem(cluster_label+3, 2, QtWidgets.QTableWidgetItem(str(round(data_b[closest_point_index],4))))
+            self.analysistable.setItem(cluster_label+3, 3, QtWidgets.QTableWidgetItem(str(round(data_c[closest_point_index],4))))
             self.analysistable.setItem(cluster_label+3, 4, QtWidgets.QTableWidgetItem(str(round(energy,2))))
             self.analysistable.setItem(cluster_label+3, 5, QtWidgets.QTableWidgetItem(str(round(energysave,2))+'%'))
             self.analysistable.setItem(cluster_label+3, 6, QtWidgets.QTableWidgetItem(str(round(risk*100,2))))

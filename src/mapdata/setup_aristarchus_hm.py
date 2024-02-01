@@ -52,16 +52,15 @@ class Setup:
         crash_max_map = -0.0288 + 0.0005310*max_slope_map + \
             0.3194*self.maps.maps_array[:,:,2] + 0.0003137*max_slope_map**2 + \
                 -0.02298*-max_slope_map*self.maps.maps_array[:,:,2] + 10.8*self.maps.maps_array[:,:,2]**2
-        self.crash_max = np.max(crash_max_map)
-        # print(self.crash_max)
+        self.crash_max = np.nanmax(crash_max_map)
 
         R_map_max = np.zeros(max_slope_map.shape)
         for i in range(max_slope_map.shape[0]):
             for j in range(max_slope_map.shape[1]):
                 R_map_max[i,j] = self.R_star(max_slope_map[i,j], self.maps.maps_array[i,j,2], distance_max)
         # Get maximal values
-        self.Emax = np.max(E_map_max)
-        self.Rmax = np.max(R_map_max)
+        self.Emax = np.nanmax(E_map_max)
+        self.Rmax = np.nanmax(R_map_max)
 
         # Get map of minimal slope
         min_slope_map = self.maps.get_slope_from_height(self.maps.maps_array[:,:,0], get_min_slope=True)
@@ -72,18 +71,18 @@ class Setup:
         E_map_min = self.E_star(min_slope_map, self.maps.maps_array[:,:,2], distance_min)
         # Get map of minimal risk (manually bc R function with if statement does not support array)
         R_map_min = np.zeros(min_slope_map.shape)
-        for i in range(1, min_slope_map.shape[0] - 1):
-            for j in range(1, min_slope_map.shape[1] - 1):
+        for i in range(min_slope_map.shape[0]):
+            for j in range(min_slope_map.shape[1]):
                 R_map_min[i,j] = self.R_star(min_slope_map[i,j], self.maps.maps_array[i,j,2], distance_min)
         # Get minimal values
-        self.Emin = 0#np.min(E_map_min)
-        self.Rmin = 0#np.min(R_map_min)
-
+        Emin = np.nanmin(E_map_min)/self.Emax
+        Rmin = np.nanmin(R_map_min)/self.Rmax
         # Get minimal cost for heuristic
+        self.hmin = self.ALPHA * Emin + self.BETA * Rmin
 
-
-        print(self.Emax, self.Emin)
-        print(self.Rmax, self.Rmin)
+        # print("Emin, Rmin: ", Emin, Rmin)
+        # print("hmin: ", self.hmin)
+        # print("Emax, Rmax: ", self.Emax, self.Rmax)
         
 
     def create_map(self):
@@ -132,11 +131,9 @@ class Setup:
             Returns:
                 Float: heuristic value
         '''
-        # E_min is minimum of normalized curve for 8m field
         x1, y1 = node
         x2, y2 = goal
-        # print(self.ALPHA * math.sqrt((x2-x1)**2 + (y2-y1)**2) / 100)
-        return 0#(self.ALPHA+self.BETA) * math.sqrt((x2-x1)**2 + (y2-y1)**2) / 10
+        return self.hmin * math.sqrt((x2-x1)**2 + (y2-y1)**2)
 
 
     def g_func(self, current, previous):
@@ -158,8 +155,8 @@ class Setup:
         t = maps[x,y,2]
 
         if (-30 <= s <= 30) and (t <= 0.3):
-            E = (self.E_star(s,t,distance)-self.Emin)/(self.Emax-self.Emin)
-            R = (self.R_star(s,t,distance)-self.Rmin)/(self.Rmax-self.Rmin)
+            E = self.E_star(s,t,distance)/self.Emax
+            R = self.R_star(s,t,distance)/self.Rmax
         else:
             E = math.inf
             R = math.inf
@@ -189,9 +186,9 @@ class Setup:
         '''single risk value'''
         # run script 'plot_3D.py' to get coefficients
         crash = -0.0288 + 0.0005310*s + 0.3194*r + 0.0003137*s**2 + -0.02298*s*r + 10.8*r**2
-        if crash <= 0:
-            crash=0
-        return crash #(1-(1-crash)**(distance/8)) #/ self.crash_max
+        if crash<=0.00001:
+            crash=0.00001
+        return 1-(1-crash)**(distance/8)
 
 
     def getdistance(self, node1, node2):

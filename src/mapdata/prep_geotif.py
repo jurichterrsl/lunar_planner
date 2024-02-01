@@ -73,5 +73,5 @@ def analyse_geotiff_pic(path_to_tif):
 
 
 if __name__ == "__main__":
-    path = "src/mapdata/Herodutus_Mons/"
-    analyse_geotiff_1band(path+"clino_feo_tio_plagio.tif")
+    path = "src/mapdata/Aristarchus_CP/"
+    analyse_geotiff_1band(path+"hsr.tif")

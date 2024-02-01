@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def astar(map_size, start, goal, setup, allow_diagonal):
+def astar(map_size, start, goal, setup, allow_diagonal, show_all_visited_nodes = False):
     '''
     Core A* function that calculates the best path and returns it as a list of tuples
 
@@ -28,19 +28,23 @@ def astar(map_size, start, goal, setup, allow_diagonal):
     f_score = {start: setup.h_func(start, goal)}  # Estimated total cost from start to goal
     closed_set = set()
 
-    visited_nodes = np.zeros(map_size)
+    if show_all_visited_nodes:
+        visited_nodes = np.zeros(map_size)
+        print(visited_nodes.shape)
 
     while open_set:
         _, current = heapq.heappop(open_set)
 
         if current == goal:
-            plot_visited_nodes(visited_nodes, start, goal)
+            if show_all_visited_nodes:
+                plot_visited_nodes(visited_nodes, start, goal)
             return reconstruct_path(came_from, current, setup.g_func, setup.h_func, goal)
 
         closed_set.add(current)
 
         for neighbor in get_neighbors(current, map_size, allow_diagonal):
-            visited_nodes[neighbor] = 1
+            if show_all_visited_nodes:
+                visited_nodes[neighbor] = 1
             if neighbor in closed_set:
                 continue
 

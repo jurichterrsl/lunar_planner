@@ -47,15 +47,15 @@ class Setup:
         max_slope_map[max_slope_map<-self.s_max]=-self.s_max
         # Get map of maximal energy consumption
         distance_max = math.sqrt(2) * abs(self.maps.pixel_size)
-        E_map_max = self.E(max_slope_map, self.maps.maps_array[:,:,2], distance_max)
+        E_map_max = self.E_star(max_slope_map, self.maps.maps_array[:,:,2], distance_max)
         # Get map of maximal risk (manually bc R function with if statement does not support array)
-        R_map_max = -0.0288 + 0.0005310*max_slope_map + 0.3194*self.maps.maps_array[:,:,2] \
-            + 0.0003137*max_slope_map**2 + -0.02298*max_slope_map*self.maps.maps_array[:,:,2] \
-                + 10.8*self.maps.maps_array[:,:,2]**2
-        R_map_max[R_map_max<0]=0
+        R_map_max = np.zeros(max_slope_map.shape)
+        for i in range(max_slope_map.shape[0]):
+            for j in range(max_slope_map.shape[1]):
+                R_map_max[i,j] = self.R_star(max_slope_map[i,j], self.maps.maps_array[i,j,2], distance_max)
         # Get maximal values
-        self.Emax = np.max(E_map_max)
-        self.Rmax = np.max(R_map_max)
+        self.Emax = np.nanmax(E_map_max)
+        self.Rmax = np.nanmax(R_map_max)
 
         # Get map of minimal slope
         min_slope_map = self.maps.get_slope_from_height(self.maps.maps_array[:,:,0], get_min_slope=True)
@@ -63,18 +63,21 @@ class Setup:
         min_slope_map[min_slope_map<-self.s_max]=-self.s_max
         # Get map of minimal energy consumption
         distance_min = abs(self.maps.pixel_size)
-        E_map_min = self.E(min_slope_map, self.maps.maps_array[:,:,2], distance_min)
+        E_map_min = self.E_star(min_slope_map, self.maps.maps_array[:,:,2], distance_min)
         # Get map of minimal risk (manually bc R function with if statement does not support array)
-        R_map_min = -0.0288 + 0.0005310*min_slope_map + 0.3194*self.maps.maps_array[:,:,2] \
-            + 0.0003137*min_slope_map**2 + -0.02298*min_slope_map*self.maps.maps_array[:,:,2] \
-                + 10.8*self.maps.maps_array[:,:,2]**2
-        R_map_min[R_map_min<0]=0
+        R_map_min = np.zeros(min_slope_map.shape)
+        for i in range(min_slope_map.shape[0]):
+            for j in range(min_slope_map.shape[1]):
+                R_map_min[i,j] = self.R_star(min_slope_map[i,j], self.maps.maps_array[i,j,2], distance_min)
         # Get minimal values
-        self.Emin = np.min(E_map_min)
-        self.Rmin = np.min(R_map_min)
+        Emin = np.nanmin(E_map_min)/self.Emax
+        Rmin = np.nanmin(R_map_min)/self.Rmax
+        # Get minimal cost for heuristic
+        self.hmin = self.ALPHA * Emin + self.BETA * Rmin
 
-        print(self.Emax, self.Emin)
-        print(self.Rmax, self.Rmin)
+        # print("Emin, Rmin: ", Emin, Rmin)
+        # print("hmin: ", self.hmin)
+        # print("Emax, Rmax: ", self.Emax, self.Rmax)
         
 
     def create_map(self):
@@ -117,10 +120,9 @@ class Setup:
             Returns:
                 Float: heuristic value
         '''
-        # E_min is minimum of normalized curve for 8m field
         x1, y1 = node
         x2, y2 = goal
-        return self.ALPHA * math.sqrt((x2-x1)**2 + (y2-y1)**2) 
+        return self.hmin * math.sqrt((x2-x1)**2 + (y2-y1)**2)
 
 
     def g_func(self, current, previous):
@@ -139,22 +141,24 @@ class Setup:
         x0, y0 = previous
         distance = self.getdistance(current, previous)
         s = math.degrees(math.atan((maps[x,y,0]-maps[x0,y0,0]) / distance))
+        # if y == 0 or y0 == 0:
+        #     print(x, x0, maps[x,y,0], maps[x0,y0,0], distance, s)
         t = maps[x,y,2]
 
         if (-30 <= s <= 30) and (t <= 0.3):
-            E_P = (self.E(s,t,distance)-self.Emin)/(self.Emax-self.Emin)
-            R_P = (self.R(s,t,distance)-self.Rmin)/(self.Rmax-self.Rmin)
+            E = self.E_star(s,t,distance)/self.Emax
+            R = self.R_star(s,t,distance)/self.Rmax
         else:
-            E_P = math.inf
-            R_P = math.inf
-        I_P = 1-maps[x,y,3]
+            E = math.inf
+            R = math.inf
+        I = 1-maps[x,y,3]
         if maps[x,y,4]==1:
-            B_P = math.inf
+            B = math.inf
         else:
-            B_P = 0
+            B = 0
 
-        total = self.ALPHA * E_P + self.BETA * R_P + self.GAMMA * I_P
-        return E_P, R_P, I_P, B_P, total
+        total = self.ALPHA * E + self.BETA * R + self.GAMMA * I
+        return E, R, I, B, total
 
 
     def max_func(self, g_score):
@@ -163,19 +167,19 @@ class Setup:
             return True
 
 
-    def E(self, s, r, distance):
+    def E_star(self, s, r, distance):
         '''single energy efficient value'''
         # run script 'plot_3D.py' to get coefficients
         return (803.3 + 10.54*s + 70.25*r + 0.7386*s**2 + -1.420*s*r + 1773*r**2) * distance/8
 
 
-    def R(self, s, r, distance):
+    def R_star(self, s, r, distance):
         '''single risk value'''
         # run script 'plot_3D.py' to get coefficients
         crash = -0.0288 + 0.0005310*s + 0.3194*r + 0.0003137*s**2 + -0.02298*s*r + 10.8*r**2
-        if crash <= 0:
-            crash=0
-        return crash
+        if crash<=0.00001:
+            crash=0.00001
+        return 1-(1-crash)**(distance/8)
 
 
     def getdistance(self, node1, node2):

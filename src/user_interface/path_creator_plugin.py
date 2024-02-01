@@ -184,7 +184,7 @@ class PathCreatorPlugin(QtWidgets.QWidget):
         '''This function first creates a distribtion between the three path optimization weights and
         thereafter calculates paths for each combination'''
         # Iterate over different combinations of a, b, and c
-        scale = 3
+        scale = 10
         a_values = np.logspace(0, 1, scale)
         b_values = np.logspace(0, 1, scale)
         c_values = np.logspace(0, 1, scale)
@@ -197,7 +197,7 @@ class PathCreatorPlugin(QtWidgets.QWidget):
         
         done_weights = []
         i=0
-        start_time = time.time()
+        # start_time = time.time()
         for a, b, c in product(a_values, b_values, c_values):
             if a+b+c!=0:
                 # Status
@@ -221,29 +221,47 @@ class PathCreatorPlugin(QtWidgets.QWidget):
                     total_length = np.sum(pairwise_distances)
                     total_pixel = len(path)
 
-                    # Save sum of stats to file
-                    stats_sum = np.sum(stats, axis=0, where=[1, 1, 1, 1, 1, 1])
+                    # Prepare file to save stats
                     if i == 1:
                         with open(folder_name+'/segment'+str(segmentindex)+'_stats.csv', 'w', newline='') as file:
-                            stats_header = ['Path no.', 'a', 'b', 'c', 'E_P', 'R_P', 'I_P', 'Length', 'No. pixel']
+                            stats_header = ['Path no.', 'a', 'b', 'c', 'E_P', 'R_P', 'I_P', 'E', 'crash', 'S', 'Length', 'No. pixel']
                             writer = csv.writer(file, delimiter='\t')
                             writer.writerow(stats_header)
 
-                    # Save stats and path coordinates
+                    # Create values for path comparison and save to file
+                    results = np.sum(stats, axis=0)
+                    energy = results[0] * setup.Emax
+
+                    risk_list = np.array(stats)[:,1]
+                    crash = 1
+                    for R_cost in risk_list:
+                        R_star = R_cost * setup.Rmax
+                        crash_single = 1 - (1-R_star)**(8/setup.maps.pixel_size)
+                        crash = crash * (1-crash_single)
+                    risk = 1-crash
+
+                    science = 1 - abs(results[2])/len(path)
+
+                    comparative_values = [energy, risk, science]
+                    stats_sum = np.sum(stats, axis=0, where=[1, 1, 1, 1, 1, 1])
+
+                    # Save stats
                     with open(folder_name+'/segment'+str(segmentindex)+'_stats.csv', 'a', newline='') as file:
-                        stats_with_weights = np.hstack([i, a, b, c, stats_sum[0:3], total_length, total_pixel])
+                        stats_with_weights = np.hstack([i, a, b, c, stats_sum[0:3], comparative_values, total_length, total_pixel])
                         writer = csv.writer(file, delimiter='\t')
                         writer.writerow(stats_with_weights)
 
+                    # Save path coordinates
                     with open(folder_name+'/segment'+str(segmentindex)+'_paths.csv', 'a', newline='') as csvfile:
                         writer = csv.writer(csvfile, delimiter='\t')
                         for coord_type in ["LON", "LAT"]:
                             header = [f'Path {i} {coord_type}']
                             coordinates = [str(coord[0 if coord_type == "LON" else 1]) for coord in path_globe]
                             writer.writerow(header + coordinates)
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        print('The calculation of all paths for segment '+str(segmentindex)+' took: '+str(elapsed_time/60)+' Minutes.')
+
+        # end_time = time.time()
+        # elapsed_time = end_time - start_time
+        # print('The calculation of all paths for segment '+str(segmentindex)+' took: '+str(elapsed_time/60)+' Minutes.')
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
