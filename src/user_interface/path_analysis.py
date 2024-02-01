@@ -12,7 +12,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 import pandas as pd
 from matplotlib import cm
 from PyQt5.QtGui import QColor, QBrush
-
+from PyQt5.QtWidgets import QSizePolicy
 
 class MyQtMainWindow(QtWidgets.QMainWindow):
     def __init__(self, ui_file):
@@ -38,6 +38,7 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
         self.map_down.setEnabled(False)
         self.current_map = -1
         self.mapwidget.plot_layer_global(self.current_map)
+        self.pathplot.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         # Initialize cluster widget
         self.clusterwidget = ClusterWidget()
@@ -45,6 +46,7 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
         layout_clusterwidget = QtWidgets.QVBoxLayout(self.analysisplot)
         layout_clusterwidget.addWidget(self.clusterwidget)
         layout_clusterwidget.addWidget(self.toolbar)
+        self.analysisplot.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         # Prepare table
         self.analysistable.setRowCount(4)
@@ -80,14 +82,15 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
             paths_files = [file for file in os.listdir(selected_folder) if file.endswith("_paths.csv")]
             stats_files = [file for file in os.listdir(selected_folder) if file.endswith("_stats.csv")]
             if not paths_files or not stats_files:
-                self.erroroutput.setStyleSheet("color: red;")         
+                self.erroroutput.setStyleSheet("color: red;")
                 self.erroroutput.setText("Folder does not contain a file that ends with '_paths.csv' and '_stats.csv'.")
             elif len(paths_files)!=len(stats_files):
-                self.erroroutput.setStyleSheet("color: red;")         
+                self.erroroutput.setStyleSheet("color: red;")
                 self.erroroutput.setText("The number of '_paths.csv' and '_stats.csv' files must be equal and should follow the naming policy 'segmentX_paths.csv' and 'segmentX_stats.csv', where X are upcounting integers (1,2,...).")
                 self.erroroutput.setWordWrap(True)
             else:
-                self.erroroutput.setText("")
+                self.erroroutput.setStyleSheet("color: black;")
+                self.erroroutput.setText("Selected folder: "+selected_folder)
 
                 self.project_folder = selected_folder+'/'
                 self.paths_files = sorted(paths_files, key=self.extract_number)
@@ -153,8 +156,8 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
         self.current_paths.append(path_globe_baseline)
         self.colors.append('r')
 
-        energy_base = data[average_point_index,4] * 345 * 3.255 / 1000
-        risk_base = 1 - (1-data[average_point_index,5]*(1-(1-0.01512)**(3.255/8)))**(8/3.255)
+        energy_base = data[average_point_index,4] * (self.setup.Emax-self.setup.Emin) + self.setup.Emin
+        risk_base = data[average_point_index,5] * (self.setup.Rmax-self.setup.Rmin) + self.setup.Rmin
         science_base = 1 - data[average_point_index,6]/path_globe_baseline.shape[0]
 
         self.analysistable.item(2,0).setBackground(QBrush(QColor(255, 0, 0, 80)))
@@ -190,9 +193,9 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
             self.current_paths.append(path_globe)
             self.colors.append(color)
 
-            # Data for comparison table            
-            energy = data[closest_point_index,4] * 345 * 3.255 / 1000
-            risk = 1 - (1-data[closest_point_index,5]*(1-(1-0.01512)**(3.255/8)))**(8/3.255)
+            # Data for comparison table
+            energy = data[closest_point_index,4] * (self.setup.Emax-self.setup.Emin) + self.setup.Emin
+            risk = data[closest_point_index,5] * (self.setup.Rmax-self.setup.Rmin) + self.setup.Rmin
             science = 1 - data[closest_point_index,6]/path_globe.shape[0]
             energysave = (energy-energy_base)/energy_base * 100
             if risk_base == 0:

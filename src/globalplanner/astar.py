@@ -2,6 +2,8 @@
 
 import heapq
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 def astar(map_size, start, goal, setup, allow_diagonal):
     '''
@@ -26,15 +28,19 @@ def astar(map_size, start, goal, setup, allow_diagonal):
     f_score = {start: setup.h_func(start, goal)}  # Estimated total cost from start to goal
     closed_set = set()
 
+    visited_nodes = np.zeros(map_size)
+
     while open_set:
         _, current = heapq.heappop(open_set)
 
         if current == goal:
+            plot_visited_nodes(visited_nodes, start, goal)
             return reconstruct_path(came_from, current, setup.g_func, setup.h_func, goal)
 
         closed_set.add(current)
 
         for neighbor in get_neighbors(current, map_size, allow_diagonal):
+            visited_nodes[neighbor] = 1
             if neighbor in closed_set:
                 continue
 
@@ -104,3 +110,14 @@ def reconstruct_path(came_from, current, g_func, h_func, goal):
     stats = list(reversed(cost))
     return np.array([list(t) for t in tupellist]), stats
 
+
+def plot_visited_nodes(visited_nodes, start, goal):
+    plt.figure()
+    plt.imshow(visited_nodes.T, cmap='gray')
+    plt.scatter(start[0], start[1], color='green', label='Start Node', marker='s')
+    plt.scatter(goal[0], goal[1], color='red', label='Goal Node', marker='s')
+    plt.legend()
+    plt.title('Visited Nodes with Start and Goal')
+    plt.xlabel('X-axis')
+    plt.ylabel('Y-axis')
+    plt.show()
