@@ -191,7 +191,7 @@ class Setup:
         crash = -0.0288 + 0.0005310*s + 0.3194*r + 0.0003137*s**2 + -0.02298*s*r + 10.8*r**2
         if crash <= 0:
             crash=0
-        return (1-(1-crash)**(distance/8)) / self.crash_max
+        return crash #(1-(1-crash)**(distance/8)) #/ self.crash_max
 
 
     def getdistance(self, node1, node2):

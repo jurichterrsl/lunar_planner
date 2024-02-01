@@ -6,7 +6,7 @@ import numpy as np
 
 
 # Load setup file
-setup = setup_file.Setup('src/mapdata/', 1.0, 0.0, 0.0, plot_global=True)
+setup = setup_file.Setup('src/mapdata/', 0.0, 0.0, 1.0, plot_global=True)
 # setup.maps.plot_four_layers_in_pixel([])
 # setup.maps.plot_layers([0,1,2],[True,False,False])
 # setup.maps.show_image()
@@ -38,11 +38,16 @@ if stats[0]!=-1:
     E_star = results[0] * (setup.Emax-setup.Emin) + len(path) * setup.Emin
     energy = E_star
 
-    print(stats[0])
-    for R_cost in stats[:,1]:
+    risk_list = np.array(stats)[:,1]
+    crash = 1
+    print("Cost for risk: ", results[1])
+    print(setup.Rmax, setup.Rmin)
+    for R_cost in risk_list:
         R_star = R_cost * (setup.Rmax-setup.Rmin) + setup.Rmin
-        crash = 1 - (1-R_star*setup.crash_max)**(8/setup.maps.pixel_size)
-        print(crash)
+        crash = crash * (1-R_star)
+        print(R_star, 1-R_star, crash)
+        #crash = crash * (1 - (1-R_star)**(8/setup.maps.pixel_size))
+    risk = 1-crash
 
     # R_star = results[1] * (setup.Rmax-setup.Rmin) + len(path) * setup.Rmin
     # print(8/setup.maps.pixel_size)
@@ -50,8 +55,8 @@ if stats[0]!=-1:
     # crash = 1 - (1-R_star*setup.crash_max)**(round(8/setup.maps.pixel_size,2))
     # risk = crash
 
-    R_star = results[1] * (setup.Rmax-setup.Rmin) + len(path) * setup.Rmin
-    risk = R_star
+    #R_star = results[1] * (setup.Rmax-setup.Rmin) + len(path) * setup.Rmin
+    #risk = R_star
 
     # # print(setup.maps.pixel_size)
     # # print(8/setup.maps.pixel_size)
