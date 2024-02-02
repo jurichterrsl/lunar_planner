@@ -204,6 +204,6 @@ class Paint():
 
 ### Examples of working with this class
 if __name__ == "__main__":
-    painter = Paint((256, 237), "src/mapdata/Aristarchus_IMP/")
+    painter = Paint((226, 256), "src/mapdata/Aristarchus_CP/")
     # painter.draw_mask_and_save_to_file('science',"pic.png",7)
-    painter.blur_binary_mask("","science", 0, 13)
+    painter.blur_binary_mask("","science", 0, 40)

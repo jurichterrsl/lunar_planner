@@ -10,9 +10,8 @@ import yaml
 from tkinter import *
 from tkinter.colorchooser import askcolor
 
-from lodia_planner.globalplanner.setups import setup_wells_extended as setup_file
-import lodia_planner.globalplanner.astar as astar_file
-import lodia_planner.globalplanner.transform as transform
+from mapdata import setup_aristarchus_imp as setup_file
+from globalplanner import transform, astar
 from scipy.ndimage import maximum_filter, minimum_filter
 import time
 import resource
@@ -52,31 +51,30 @@ def run_all_combos_once(start, goal, faktor):
       # setup.maps.show_image_with_path([start, goal], False)
       # # setup.maps.show_image_with_path([start_globe, goal_globe], True)
       # plt.show()
-
-      setup = setup_file.Setup('lodia_planner', 1.0, 0.0, 0.0, False)
-      setup1 = setup_file.Setup('lodia_planner', 0.8, 0.2, 0.0, False)
-      setup2 = setup_file.Setup('lodia_planner', 0.6, 0.4, 0.0, False)
-      setup3 = setup_file.Setup('lodia_planner', 0.4, 0.6, 0.0, False)
-      setup4 = setup_file.Setup('lodia_planner', 0.2, 0.8, 0.0, False)
-      setup5 = setup_file.Setup('lodia_planner', 0.0, 1.0, 0.0, False)
+      setup = setup_file.Setup('src/mapdata/', 1.0, 0.0, 0.0, False)
+      setup1 = setup_file.Setup('src/mapdata/', 0.8, 0.2, 0.0, False)
+      setup2 = setup_file.Setup('src/mapdata/', 0.6, 0.4, 0.0, False)
+      setup3 = setup_file.Setup('src/mapdata/', 0.4, 0.6, 0.0, False)
+      setup4 = setup_file.Setup('src/mapdata/', 0.2, 0.8, 0.0, False)
+      setup5 = setup_file.Setup('src/mapdata/', 0.0, 1.0, 0.0, False)
       title = '(a, b)='
       setups_a = [setup, setup1, setup2, setup3, setup4, setup5]
 
-      setup = setup_file.Setup('lodia_planner', 0, 1.0, 0.0, False)
-      setup1 = setup_file.Setup('lodia_planner', 0, 0.8, 0.2, False)
-      setup2 = setup_file.Setup('lodia_planner', 0, 0.6, 0.4, False)
-      setup3 = setup_file.Setup('lodia_planner', 0, 0.4, 0.6, False)
-      setup4 = setup_file.Setup('lodia_planner', 0, 0.2, 0.8, False)
-      setup5 = setup_file.Setup('lodia_planner', 0, 0.0, 1.0, False)
+      setup = setup_file.Setup('src/mapdata/', 0, 1.0, 0.0, False)
+      setup1 = setup_file.Setup('src/mapdata/', 0, 0.8, 0.2, False)
+      setup2 = setup_file.Setup('src/mapdata/', 0, 0.6, 0.4, False)
+      setup3 = setup_file.Setup('src/mapdata/', 0, 0.4, 0.6, False)
+      setup4 = setup_file.Setup('src/mapdata/', 0, 0.2, 0.8, False)
+      setup5 = setup_file.Setup('src/mapdata/', 0, 0.0, 1.0, False)
       title = '(b, c)='
       setups_b = [setup, setup1, setup2, setup3, setup4, setup5]
 
-      setup = setup_file.Setup('lodia_planner', 1.0, 0.0, 0.0, False)
-      setup1 = setup_file.Setup('lodia_planner', 0.8, 0.0, 0.2, False)
-      setup2 = setup_file.Setup('lodia_planner', 0.6, 0.0, 0.4, False)
-      setup3 = setup_file.Setup('lodia_planner', 0.4, 0.0, 0.6, False)
-      setup4 = setup_file.Setup('lodia_planner', 0.2, 0.0, 0.8, False)
-      setup5 = setup_file.Setup('lodia_planner', 0.0, 0.0, 1.0, False)
+      setup = setup_file.Setup('src/mapdata/', 1.0, 0.0, 0.0, False)
+      setup1 = setup_file.Setup('src/mapdata/', 0.8, 0.0, 0.2, False)
+      setup2 = setup_file.Setup('src/mapdata/', 0.6, 0.0, 0.4, False)
+      setup3 = setup_file.Setup('src/mapdata/', 0.4, 0.0, 0.6, False)
+      setup4 = setup_file.Setup('src/mapdata/', 0.2, 0.0, 0.8, False)
+      setup5 = setup_file.Setup('src/mapdata/', 0.0, 0.0, 1.0, False)
       title = '(a, c)='
       setups_c = [setup, setup1, setup2, setup3, setup4, setup5]
 
@@ -117,7 +115,7 @@ def run_all_combos_once(start, goal, faktor):
       titles = ['(a, c)=']
       what = ['Satellite image', 'Height map', 'Interest map']
       fig, axis = plt.subplots(1, 3)
-      fig.suptitle('Energy consumption vs. Scientific interest', fontsize=30)
+      fig.suptitle('Energy consumption vs. Scientific interest', fontsize=20)
       k = 0
       plt.subplots_adjust(left=0.05, bottom=0.11, right=0.99, top=0.88, wspace=0.31, hspace=0.19)
       #ax = axis
@@ -134,9 +132,9 @@ def run_all_combos_once(start, goal, faktor):
                   #setup.maps.plot_five_layers([])
                   #[start_pixel, goal_pixel] = transform.from_sim_to_pixel([start, goal], setup)
                   # [start_sim, goal_sim] = transform.from_globe_to_sim([start, goal], setup)
-                  [start_pixel, goal_pixel] = transform.from_sim_to_pixel([start, goal], setup)
-                  path, stats = astar_file.astar(setup.map_size_in_pixel, start_pixel, goal_pixel, setup.h_func, setup.g_func, allow_diagonal=True)
-                  path_sim = transform.from_pixel_to_sim(path, setup)
+                  [start_pixel, goal_pixel] = transform.from_map_to_pixel([start, goal], setup)
+                  path, stats = astar.astar(setup.map_size_in_pixel, start_pixel, goal_pixel, setup, allow_diagonal=True)
+                  path_sim = transform.from_pixel_to_map(path, setup)
                   #path_coordinates = transform.from_sim_to_globe(path_sim, setup)
                   paths_pixel.append(path)
                   paths_coordinates.append(path_sim)
@@ -161,24 +159,24 @@ def run_all_combos_once(start, goal, faktor):
             axis[1].contour(np.flip(plot_map.T, axis=0), levels=20, colors='#000000',
                                     linestyles='solid', linewidths=1, extent=setup.maps.extent)
             cbar1 = plt.colorbar(img1, ax=axis[1])
-            cbar1.ax.set_ylabel('m', fontsize=24)
-            cbar1.ax.tick_params(labelsize=20)
+            cbar1.ax.set_ylabel('m', fontsize=14)
+            cbar1.ax.tick_params(labelsize=12)
 
             plot_map = setup.maps.maps_array[:,:,3]
             img2 = axis[2].imshow(plot_map.T, cmap='Greys', extent=setup.maps.extent,
                                  aspect = setup.maps.aspect_ratio, alpha=0.5)
             cbar2 = plt.colorbar(img2, ax=axis[2])
-            cbar2.ax.tick_params(labelsize=20)
+            cbar2.ax.tick_params(labelsize=12)
 
             for n, ax in enumerate(axis.flat):
                   for j, path in enumerate(paths_coordinates):
                         ax.plot(path[:,0], path[:,1], colors[j], linewidth=5, linestyle=ls[j])
-                  ax.set_title(what[n], fontsize=26)
-                  ax.set_xlabel("x [m]", fontsize=26)
-                  ax.set_ylabel("y [m]", fontsize=26)
-                  ax.tick_params(axis='both', which='major', labelsize=22)
-                  legend = ax.legend(axis_legend, fontsize=22, title = titles[k])
-                  legend.get_title().set_fontsize(22)
+                  ax.set_title(what[n], fontsize=14)
+                  ax.set_xlabel("x [m]", fontsize=14)
+                  ax.set_ylabel("y [m]", fontsize=14)
+                  ax.tick_params(axis='both', which='major', labelsize=12)
+                  legend = ax.legend(axis_legend, fontsize=12, title = titles[k])
+                  legend.get_title().set_fontsize(12)
 
       plt.show()
       # end_time = time.time()
@@ -187,11 +185,17 @@ def run_all_combos_once(start, goal, faktor):
 
 
 # ###### Run once ######
-start = (86, 134)
-goal = (760, 657)
-size = 256
-faktor = size/256
-outtime = run_all_combos_once(start, goal, faktor)
+start = (-46.77546186, 25.03932639)
+goal = (-46.75064526, 25.05898353)
+
+goal = (-46.77451946, 25.03838284)
+
+setup = setup_file.Setup('src/mapdata/', 1.0, 0.0, 0.0, False)
+[start_pixel, goal_pixel] = transform.from_globe_to_pixel([start, goal], setup)
+
+# size = 256
+# faktor = size/256
+outtime = run_all_combos_once(start_pixel, goal_pixel, faktor=1)
 
 ###### Create random numbers ######
 # starts = [(752, 105)]

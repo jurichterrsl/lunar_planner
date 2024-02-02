@@ -172,9 +172,14 @@ class PathCreatorPlugin(QtWidgets.QWidget):
 
             num_segments = len(self.waypoints)-1
             segment = 0
+
+            start_time = time.time()
             for coord1, coord2 in zip(self.waypoints[:-1], self.waypoints[1:]):
                 segment = segment+1
                 self.create_paths(10, coord1, coord2, output_folder, segment, num_segments) # TODO change scale to 10
+            end_time = time.time()
+            elapsed_time = end_time - start_time
+            print('The calculation of all paths took: '+str(elapsed_time/60)+' Minutes.')
 
             self.successmsg.setText("Paths successfully calculated and saved in folder '"+output_folder+"'. You can now close this window.")
             self.successmsg.setWordWrap(True)

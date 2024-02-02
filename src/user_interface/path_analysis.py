@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets
 from python_qt_binding import loadUi
 from user_interface.map_widget import MapWidget
 from user_interface.cluster_widget import ClusterWidget
-from mapdata import setup_aristarchus_hm as setup_file
+from mapdata import setup_aristarchus_imp as setup_file
 import numpy as np
 from scipy.spatial.distance import cdist
 from sklearn.cluster import KMeans
@@ -133,7 +133,7 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
         n_pixel = data[:, 10]
 
         # Calculate clusters
-        kmeans = KMeans(n_clusters=n_clusters, random_state=0, n_init='auto').fit(np.column_stack((data_E_P, data_R_P, data_I_P)))
+        kmeans = KMeans(n_clusters=n_clusters, random_state=0, n_init=2**n_clusters).fit(np.column_stack((data_E_P, data_R_P, data_I_P)))
         labels = kmeans.labels_
         cluster_centers = kmeans.cluster_centers_
         self.clusterwidget.plot(data_E_P, data_R_P, data_I_P, color=labels)

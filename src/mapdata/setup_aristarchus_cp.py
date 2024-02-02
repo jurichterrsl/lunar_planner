@@ -80,9 +80,9 @@ class Setup:
         # Get minimal cost for heuristic
         self.hmin = self.ALPHA * Emin + self.BETA * Rmin
 
-        print("Emin, Rmin: ", Emin, Rmin)
-        print("hmin: ", self.hmin)
-        print("Emax, Rmax: ", self.Emax, self.Rmax)
+        # print("Emin, Rmin: ", Emin, Rmin)
+        # print("hmin: ", self.hmin)
+        # print("Emax, Rmax: ", self.Emax, self.Rmax)
 
 
     def create_map(self):
@@ -101,30 +101,24 @@ class Setup:
                                    plot_global=self.PLOT_GLOBAL,
                                    add_filter_for_heightmap=True)
         
-        self.maps.maps_array[:,:,1] = self.maps.get_slope_from_height(self.maps.maps_array[:,:,0])
+        self.maps.maps_array[:,:,1] = np.abs(self.maps.get_slope_from_height(self.maps.maps_array[:,:,0]))
         self.maps.maps_array[:,:,3] = np.zeros(self.map_size_in_pixel)
-        self.maps.maps_array[:,:,4] = np.zeros(self.map_size_in_pixel)
-        
-        # # Change height and slope so that slope is second and heigth first entry
-        # slope = np.copy(self.maps.maps_array[:,:,0])
-        # self.maps.maps_array[:,:,0] = self.maps.maps_array[:,:,1]
-        # self.maps.maps_array[:,:,1] = slope
+        self.maps.maps_array[:,:,4] = np.zeros(self.map_size_in_pixel)   
         
         # # Add more layers
-        # self.maps.extract_geotiff_science(self.path_to_root+"Herodutus_Mons/clino_feo_tio_plagio.tif")
-        # self.maps.load_npy_file_and_add_to_array(self.path_to_root+'Herodutus_Mons/banned.npy',
-        #                                           'Banned areas')
+        self.maps.load_npy_file_and_add_to_array(self.path_to_root+'Aristarchus_CP/science_blurred.npy',
+                                                  'Banned areas')
         
-        # # Add steep and rocky areas to banned areas
-        # slope = self.maps.maps_array[:,:,1]
-        # rockabundance = self.maps.maps_array[:,:,2]
-        # # Load banned areas or set to zero
-        # banned = self.maps.maps_array[:,:,4]
-        # banned[slope>30] = 1
-        # banned[slope<-30] = 1
-        # banned[rockabundance>0.3] = 1
-        # self.maps.maps_array[:,:,4] = banned
-        # self.maps.layer_names.append("Banned")
+        # Add steep and rocky areas to banned areas
+        slope = self.maps.maps_array[:,:,1]
+        rockabundance = self.maps.maps_array[:,:,2]
+        # Load banned areas or set to zero
+        banned = self.maps.maps_array[:,:,4]
+        banned[slope>30] = 1
+        banned[slope<-30] = 1
+        banned[rockabundance>0.3] = 1
+        self.maps.maps_array[:,:,4] = banned
+        self.maps.layer_names.append("Banned")
 
 
     def h_func(self, node, goal):
@@ -193,6 +187,8 @@ class Setup:
         crash = -0.0288 + 0.0005310*s + 0.3194*r + 0.0003137*s**2 + -0.02298*s*r + 10.8*r**2
         if crash <= 0:
             crash=0
+        if crash>1:
+            crash=1
         return 1-(1-crash)**(distance/8)
 
 

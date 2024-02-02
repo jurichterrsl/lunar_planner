@@ -6,16 +6,19 @@ import numpy as np
 
 
 # Load setup file
-setup = setup_file.Setup('src/mapdata/', 0.0, 1.0, 0.0, plot_global=True)
+setup = setup_file.Setup('src/mapdata/', 0.0, 0.0, 1.0, plot_global=True)
 # setup.maps.plot_four_layers_in_pixel([])
 # setup.maps.plot_layers([0,1,2],[True,False,False])
 # setup.maps.show_image()
 
 # Define start and goal manually
-# start = (-46.75458, 25.03874) #(longitude, latitude)
-# goal = (-46.77286, 25.05064) #(longitude, latitude)
-# [start_sim, goal_sim] = transform.from_globe_to_map([start, goal], setup)
-start_sim, goal_sim = (6000.0, 4000.0), (12000.0, 8000.0)
+start = (-46.77546186, 25.03932639)
+goal = (-46.75064526, 25.05898353)
+start = (-52.99632770016827, 27.425843848099724)
+goal = (-52.85282349257713, 27.59859732093237)
+
+[start_sim, goal_sim] = transform.from_globe_to_map([start, goal], setup)
+# start_sim, goal_sim = (6000.0, 4000.0), (12000.0, 8000.0)
 [start_pixel, goal_pixel] = transform.from_map_to_pixel([start_sim, goal_sim], setup)
 
 # # Define start and goal through click on map
@@ -25,7 +28,7 @@ start_sim, goal_sim = (6000.0, 4000.0), (12000.0, 8000.0)
 # [start_pixel, goal_pixel] = transform.from_map_to_pixel([start_sim, goal_sim], setup)
 
 # Run A* algorithm
-path, stats = astar.astar(setup.map_size_in_pixel, start_pixel, goal_pixel, setup, allow_diagonal=True, show_all_visited_nodes=True)
+path, stats = astar.astar(setup.map_size_in_pixel, start_pixel, goal_pixel, setup, allow_diagonal=True)
 
 if stats[0]!=-1:
     # Save stats to file
@@ -35,6 +38,7 @@ if stats[0]!=-1:
 
     # Print some stats
     results = np.sum(stats, axis=0)
+    print('E, R, I:', results[0:3])
     E_star = results[0] * setup.Emax
     energy = E_star
 
@@ -52,6 +56,7 @@ if stats[0]!=-1:
     print('The complete energy consumption is '+str(round(energy/1000,2))+' kNm^2.')
     print('The taken risk is '+str(round(risk*100,6))+' %.')
     print('The scientific outcome is '+str(round(science*100,2))+' % of what would have been possible on the same path length.')
+    print('The length of the path is '+str(len(path)*setup.maps.pixel_size)+' m.')
     print('')
 
     # Show result
