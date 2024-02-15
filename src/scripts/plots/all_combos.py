@@ -10,7 +10,7 @@ import yaml
 from tkinter import *
 from tkinter.colorchooser import askcolor
 
-from mapdata import setup_aristarchus_hm as setup_file
+from mapdata import setup_aristarchus_imp as setup_file
 from globalplanner import transform, astar
 
 from scipy.ndimage import maximum_filter, minimum_filter
@@ -53,30 +53,35 @@ def run_all_combos_once(start, goal, faktor):
       # # setup.maps.show_image_with_path([start_globe, goal_globe], True)
       # plt.show()
 
-      setup = setup_file.Setup('src/mapdata/', 1.0, 0.0, 0.0, False)
-      setup1 = setup_file.Setup('src/mapdata/', 0.8, 0.2, 0.0, False)
-      setup2 = setup_file.Setup('src/mapdata/', 0.6, 0.4, 0.0, False)
-      setup3 = setup_file.Setup('src/mapdata/', 0.4, 0.6, 0.0, False)
-      setup4 = setup_file.Setup('src/mapdata/', 0.2, 0.8, 0.0, False)
-      setup5 = setup_file.Setup('src/mapdata/', 0.0, 1.0, 0.0, False)
+      plot_global = True
+
+      setup = setup_file.Setup('src/mapdata/', 1.0, 0.0, 0.0, plot_global)
+      setup1 = setup_file.Setup('src/mapdata/', 0.8, 0.2, 0.0, plot_global)
+      setup2 = setup_file.Setup('src/mapdata/', 0.6, 0.4, 0.0, plot_global)
+      setup3 = setup_file.Setup('src/mapdata/', 0.4, 0.6, 0.0, plot_global)
+      setup4 = setup_file.Setup('src/mapdata/', 0.2, 0.8, 0.0, plot_global)
+      # setup1 = setup_file.Setup('src/mapdata/', 0.5, 0.5, 0.0, plot_global)
+      setup5 = setup_file.Setup('src/mapdata/', 0.0, 1.0, 0.0, plot_global)
       title = '(a, b)='
       setups_a = [setup, setup1, setup2, setup3, setup4, setup5]
 
-      setup = setup_file.Setup('src/mapdata/', 0, 1.0, 0.0, False)
-      setup1 = setup_file.Setup('src/mapdata/', 0, 0.8, 0.2, False)
-      setup2 = setup_file.Setup('src/mapdata/', 0, 0.6, 0.4, False)
-      setup3 = setup_file.Setup('src/mapdata/', 0, 0.4, 0.6, False)
-      setup4 = setup_file.Setup('src/mapdata/', 0, 0.2, 0.8, False)
-      setup5 = setup_file.Setup('src/mapdata/', 0, 0.0, 1.0, False)
+      setup = setup_file.Setup('src/mapdata/', 0, 1.0, 0.0, plot_global)
+      setup1 = setup_file.Setup('src/mapdata/', 0, 0.8, 0.2, plot_global)
+      setup2 = setup_file.Setup('src/mapdata/', 0, 0.6, 0.4, plot_global)
+      setup3 = setup_file.Setup('src/mapdata/', 0, 0.4, 0.6, plot_global)
+      setup4 = setup_file.Setup('src/mapdata/', 0, 0.2, 0.8, plot_global)
+      # setup1 = setup_file.Setup('src/mapdata/', 0, 0.5, 0.5, plot_global)
+      setup5 = setup_file.Setup('src/mapdata/', 0, 0.0, 1.0, plot_global)
       title = '(b, c)='
       setups_b = [setup, setup1, setup2, setup3, setup4, setup5]
 
-      setup = setup_file.Setup('src/mapdata/', 1.0, 0.0, 0.0, False)
-      setup1 = setup_file.Setup('src/mapdata/', 0.8, 0.0, 0.2, False)
-      setup2 = setup_file.Setup('src/mapdata/', 0.6, 0.0, 0.4, False)
-      setup3 = setup_file.Setup('src/mapdata/', 0.4, 0.0, 0.6, False)
-      setup4 = setup_file.Setup('src/mapdata/', 0.2, 0.0, 0.8, False)
-      setup5 = setup_file.Setup('src/mapdata/', 0.0, 0.0, 1.0, False)
+      setup = setup_file.Setup('src/mapdata/', 1.0, 0.0, 0.0, plot_global)
+      setup1 = setup_file.Setup('src/mapdata/', 0.8, 0.0, 0.2, plot_global)
+      setup2 = setup_file.Setup('src/mapdata/', 0.6, 0.0, 0.4, plot_global)
+      setup3 = setup_file.Setup('src/mapdata/', 0.4, 0.0, 0.6, plot_global)
+      setup4 = setup_file.Setup('src/mapdata/', 0.2, 0.0, 0.8, plot_global)
+      # setup1 = setup_file.Setup('src/mapdata/', 0.5, 0.0, 0.5, plot_global)
+      setup5 = setup_file.Setup('src/mapdata/', 0.0, 0.0, 1.0, plot_global)
       title = '(a, c)='
       setups_c = [setup, setup1, setup2, setup3, setup4, setup5]
 
@@ -99,6 +104,7 @@ def run_all_combos_once(start, goal, faktor):
       # titles = ['(a, b)=', '(b, c)=', '(a, c)=']
       what = ['','',''] # ['Energy vs. Risk', 'Risk vs. Interest', 'Energy vs. Interest']
       fig, axis = plt.subplots(1, 3)
+      fig2, axis2 = plt.subplots(1, 1)
       for k, ax in enumerate(axis.flat):
 
       ###### Without plots ######
@@ -131,10 +137,10 @@ def run_all_combos_once(start, goal, faktor):
                   #[start_pixel, goal_pixel] = transform.from_sim_to_pixel([start, goal], setup)
                   # [start_sim, goal_sim] = transform.from_globe_to_sim([start, goal], setup)
                   path, stats = astar.astar(setup.map_size_in_pixel, start, goal, setup, allow_diagonal=True)
-                  path_sim = transform.from_pixel_to_map(path, setup)
+                  path_globe = transform.from_pixel_to_globe(path, setup)
                   #path_coordinates = transform.from_sim_to_globe(path_sim, setup)
                   paths_pixel.append(path)
-                  paths_coordinates.append(path_sim)
+                  paths_coordinates.append(path_globe)
                   # stats_list.append(stats)
                   print(len(paths_pixel))
                   # setup.maps.show_image_with_path(path_coordinates)
@@ -148,6 +154,7 @@ def run_all_combos_once(start, goal, faktor):
 
             # Show image:
             ax.imshow(setup.maps.map_image, extent=setup.maps.extent, aspect=setup.maps.aspect_ratio, alpha=0.5)
+            axis2.imshow(setup.maps.map_image, extent=setup.maps.extent, aspect=setup.maps.aspect_ratio, alpha=0.5)
             # Show some layer of maps array:
             # plot_map = setup.maps.maps_array[:,:,3]
             # img = ax.imshow(plot_map.T, cmap='viridis', extent=setup.maps.extent,
@@ -156,16 +163,20 @@ def run_all_combos_once(start, goal, faktor):
             # cbar.ax.set_ylabel(setup.maps.layer_names[3], fontsize=24)
             # cbar.ax.tick_params(labelsize=20)
 
-            ax.set_xlabel("x [m]", fontsize=16)
-            ax.set_ylabel("y [m]", fontsize=16)
+            ax.set_xlabel("LON [deg]", fontsize=16)
+            ax.set_ylabel("LAT [deg]", fontsize=16)
+            axis2.set_xlabel("LON [deg]", fontsize=16)
+            axis2.set_ylabel("LAT [deg]", fontsize=16)
+
             ls = ['-', (5, (10,2)), (0, (10,2,1,2)) ,'--', (0, (1,1)), (0, (3,2,1,2,1,2))]
             for j, path in enumerate(paths_coordinates):
                   ax.plot(path[:,0], path[:,1], colors[k][j], linewidth=5, linestyle=ls[j])
+                  axis2.plot(path[:,0], path[:,1], 'r', linewidth=2)
             ax.set_title(what[k], fontsize=16)
             ax.tick_params(axis='both', which='major', labelsize=16)
+            axis2.tick_params(axis='both', which='major', labelsize=16)
             legend = ax.legend(axis_legend, fontsize=13, title = titles[k])
             legend.set_draggable(True)
-
 
             legend.get_title().set_fontsize(14)
 
@@ -182,10 +193,14 @@ setup = setup_file.Setup('src/mapdata/', 1.0, 0.0, 0.0, True)
 # IMP
 # start = (-46.77546186, 25.03932639)
 # goal = (-46.75064526, 25.05898353)
+start = (-46.77877996828475, 25.034789363991408)
+goal = (-46.75469896510251, 25.062598388586796)
 
-# HM
-start = (-52.99632770016827, 27.425843848099724)
-goal = (-52.85282349257713, 27.59859732093237)
+# # HM
+# start = (-52.99632770016827, 27.425843848099724)
+# goal = (-52.85282349257713, 27.59859732093237)
+# start = (-53.07859125866001, 27.384712068853858)
+# goal = (-52.80437939702088, 27.587628846466806)
 
 [start_pixel, goal_pixel] = transform.from_globe_to_pixel([start, goal], setup)
 

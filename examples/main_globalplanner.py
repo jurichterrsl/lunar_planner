@@ -12,20 +12,20 @@ setup = setup_file.Setup('src/mapdata/', 0.0, 0.0, 1.0, plot_global=True)
 # setup.maps.show_image()
 
 # Define start and goal manually
-start = (-46.77546186, 25.03932639)
-goal = (-46.75064526, 25.05898353)
-start = (-52.99632770016827, 27.425843848099724)
-goal = (-52.85282349257713, 27.59859732093237)
+# start = (-46.77546186, 25.03932639)
+# goal = (-46.75064526, 25.05898353)
+# start = (-52.99632770016827, 27.425843848099724)
+# goal = (-52.85282349257713, 27.59859732093237)
 
-[start_sim, goal_sim] = transform.from_globe_to_map([start, goal], setup)
-# start_sim, goal_sim = (6000.0, 4000.0), (12000.0, 8000.0)
-[start_pixel, goal_pixel] = transform.from_map_to_pixel([start_sim, goal_sim], setup)
-
-# # Define start and goal through click on map
-# print('Choose start & goal by clicking with the left & right mouse button (respectively) on the image.')
-# setup.maps.choose_start_and_goal_on_image()
-# [start_sim, goal_sim] = transform.from_globe_to_map([setup.maps.start, setup.maps.goal], setup)
+# [start_sim, goal_sim] = transform.from_globe_to_map([start, goal], setup)
+# # start_sim, goal_sim = (6000.0, 4000.0), (12000.0, 8000.0)
 # [start_pixel, goal_pixel] = transform.from_map_to_pixel([start_sim, goal_sim], setup)
+
+# Define start and goal through click on map
+print('Choose start & goal by clicking with the left & right mouse button (respectively) on the image.')
+setup.maps.choose_start_and_goal_on_image()
+[start_sim, goal_sim] = transform.from_globe_to_map([setup.maps.start, setup.maps.goal], setup)
+[start_pixel, goal_pixel] = transform.from_map_to_pixel([start_sim, goal_sim], setup)
 
 # Run A* algorithm
 path, stats = astar.astar(setup.map_size_in_pixel, start_pixel, goal_pixel, setup, allow_diagonal=True)

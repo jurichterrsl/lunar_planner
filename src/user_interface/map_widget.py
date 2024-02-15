@@ -26,7 +26,7 @@ class MapWidget(QtWidgets.QWidget):
     # DEFAULT_CMAP = colors.LinearSegmentedColormap.from_list\
     #     ("", ["darkslategray","mediumturquoise",'#c9a687','#a6611a'])
     DEFAULT_CMAP = 'viridis'
-    FONTSIZE = 11
+    FONTSIZE = 18
 
     def __init__(self, width, height, extent, pixel_size, map_image, maps_array, \
                  layer_names, toolbar, plot_global):
@@ -99,11 +99,11 @@ class MapWidget(QtWidgets.QWidget):
             self.cbar = None
         
         if layer == -1:
-            self.axis.imshow(self.map_img, extent=self.extent_global, aspect = self.aspect_ratio_global)
+            self.axis.imshow(self.map_img, extent=self.extent_global, aspect = self.aspect_ratio_global, alpha=0.7)
         else:
             plot_map = self.maps_array[:,:,layer]
             self.img = self.axis.imshow(plot_map.T, cmap=self.DEFAULT_CMAP,\
-                                extent=self.extent_global, aspect = self.aspect_ratio_global)
+                                extent=self.extent_global, aspect = self.aspect_ratio_global, alpha=0.7)
             if layer==0:
                 self.axis.contour(np.flip(plot_map.T, axis=0), levels=20, colors='#333333', linestyles='solid', \
                             linewidths=1, extent=self.extent_global)
@@ -116,7 +116,7 @@ class MapWidget(QtWidgets.QWidget):
         self.axis.yaxis.set_major_formatter(ticker.StrMethodFormatter('{x:.4f}'))
         self.axis.xaxis.set_major_locator(ticker.MaxNLocator(4))
         self.axis.yaxis.set_major_locator(ticker.MaxNLocator(5))
-        self.axis.tick_params(axis='both', which='major', labelsize=10)
+        self.axis.tick_params(axis='both', which='major', labelsize=self.FONTSIZE)
 
         self.canvas.draw()
 

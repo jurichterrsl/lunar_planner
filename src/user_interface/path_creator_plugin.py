@@ -213,7 +213,9 @@ class PathCreatorPlugin(QtWidgets.QWidget):
 
                 if [a,b,c] not in done_weights:
                     done_weights.append([a,b,c])
-                    setup = Setup('src/mapdata/', a, b, c, plot_global=True)
+                    setup.ALPHA = a
+                    setup.BETA = b
+                    setup.GAMMA = c
 
                     # Run A* algorithm
                     path, stats = astar.astar(setup.map_size_in_pixel, start_pixel, goal_pixel, setup, allow_diagonal=True)

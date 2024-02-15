@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets
 from python_qt_binding import loadUi
 from user_interface.map_widget import MapWidget
 from user_interface.cluster_widget import ClusterWidget
-from mapdata import setup_aristarchus_imp as setup_file
+from mapdata import setup_aristarchus_hm as setup_file
 import numpy as np
 from scipy.spatial.distance import cdist
 from sklearn.cluster import KMeans
@@ -51,7 +51,7 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
         self.analysistable.setColumnCount(12)
 
         titles_tabel1 = ['','Weights','','','Energy','','Risk','','Science','','# Paths in cluster','Custer var']
-        titles_tabel2 = ['','alpha','beta','gamma','[kNm^2]','cmp to base','%','cmp to base','% of path','cmp to base','','']
+        titles_tabel2 = ['','alpha','beta','gamma','%','cmp to base','%','cmp to base','% of path','cmp to base','','']
         for i, title in enumerate(titles_tabel1):
             self.analysistable.setItem(0, i, QtWidgets.QTableWidgetItem(title))
         for i, title in enumerate(titles_tabel2):
@@ -165,7 +165,7 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
         self.analysistable.setItem(2, 1, QtWidgets.QTableWidgetItem(str(round(data_a[average_point_index],4))))
         self.analysistable.setItem(2, 2, QtWidgets.QTableWidgetItem(str(round(data_b[average_point_index],4))))
         self.analysistable.setItem(2, 3, QtWidgets.QTableWidgetItem(str(round(data_c[average_point_index],4))))
-        self.analysistable.setItem(2, 4, QtWidgets.QTableWidgetItem(str(round(energy_base,2))))
+        self.analysistable.setItem(2, 4, QtWidgets.QTableWidgetItem(str(round(100,2))))
         self.analysistable.setItem(2, 6, QtWidgets.QTableWidgetItem(str(round(risk_base*100,2))))
         self.analysistable.setItem(2, 8, QtWidgets.QTableWidgetItem(str(round(science_base*100,2))))
 
@@ -210,7 +210,7 @@ class MyQtMainWindow(QtWidgets.QMainWindow):
             self.analysistable.setItem(cluster_label+3, 1, QtWidgets.QTableWidgetItem(str(round(data_a[closest_point_index],4))))
             self.analysistable.setItem(cluster_label+3, 2, QtWidgets.QTableWidgetItem(str(round(data_b[closest_point_index],4))))
             self.analysistable.setItem(cluster_label+3, 3, QtWidgets.QTableWidgetItem(str(round(data_c[closest_point_index],4))))
-            self.analysistable.setItem(cluster_label+3, 4, QtWidgets.QTableWidgetItem(str(round(energy,2))))
+            self.analysistable.setItem(cluster_label+3, 4, QtWidgets.QTableWidgetItem(str(round(energy/energy_base*100,2))))
             self.analysistable.setItem(cluster_label+3, 5, QtWidgets.QTableWidgetItem(str(round(energysave,2))+'%'))
             self.analysistable.setItem(cluster_label+3, 6, QtWidgets.QTableWidgetItem(str(round(risk*100,2))))
             self.analysistable.setItem(cluster_label+3, 7, QtWidgets.QTableWidgetItem(str(round(risksave,2))+'%'))
